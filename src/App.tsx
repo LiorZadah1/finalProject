@@ -1,35 +1,35 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useMetaMask } from "metamask-react";
+//import HomePage from './components/HomePage';
+import VoteTable from './components/VoteTable';
+import ElectionForm from './components/ElectionForm';
+import VotingProcess from './components/VotingComponent';
+import VoteResults from './components/ResultsComponent';
+import UserManagement from './components/ManagementComponent';
 
-function App() {
-  const [count, setCount] = useState(0)
+const App = () => {
+  const { status, connect, account, chainId } = useMetaMask();
 
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+  if (status === "initializing") return <div>Synchronisation with MetaMask ongoing...</div>;
+  if (status === "unavailable") return <div>MetaMask not available :(</div>;
+  if (status === "notConnected") return <button onClick={connect}>Connect to MetaMask</button>;
+  if (status === "connecting") return <div>Connecting...</div>;
+  if (status === "connected") {
+    return (
+      <Router>
+        <Routes>
+          <Route path="/" element={<VoteTable />} />
+          <Route path="/election-form" element={<ElectionForm />} />
+          <Route path="/voting-process" element={<VotingProcess />} />
+          <Route path="/vote-results" element={<VoteResults />} />
+          <Route path="/user-management" element={<UserManagement />} />
+        </Routes>
+      </Router>
+    );
+  }
 
-export default App
+  return <div>An unknown error occurred.</div>;
+};
+
+export default App;

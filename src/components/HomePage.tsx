@@ -1,5 +1,5 @@
 import React from 'react';
-
+//here we will use the vote table componenet 
 const HomePage = () => {
   return (
     <div>
