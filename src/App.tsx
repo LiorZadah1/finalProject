@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useMetaMask } from "metamask-react";
-//import HomePage from './components/HomePage';
-import VoteTable from './components/VoteTable';
+import HomePage from './components/HomePage';
+//import VoteTable from './components/VoteTable';
 import ElectionForm from './components/ElectionForm';
 import VotingProcess from './components/VotingComponent';
 import VoteResults from './components/ResultsComponent';
@@ -19,7 +19,7 @@ const App = () => {
     return (
       <Router>
         <Routes>
-          <Route path="/" element={<VoteTable />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/election-form" element={<ElectionForm />} />
           <Route path="/voting-process" element={<VotingProcess />} />
           <Route path="/vote-results" element={<VoteResults />} />
