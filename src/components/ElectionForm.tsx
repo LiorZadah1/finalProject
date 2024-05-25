@@ -1,88 +1,71 @@
-import React, { useState , useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import { createContract } from '../utils/createContract';
+import {db} from '../firebaseConfig'; // Import Firestore configuration
+import { doc, getDoc } from 'firebase/firestore';
 
 const ElectionForm: React.FC = () => {
-  const [contractABI, setContractABI] = useState<any>(null);
-  const [contractAddress, setContractAddress] = useState<string>('');
-  const [voteName, setVoteName] = useState('');
-  const [startVoteTime, setStartVoteTime] = useState('');
-  const [endVoteTime, setEndVoteTime] = useState('');
-  const [groupId, setGroupId] = useState('');
-  const [error, setError] = useState<string | null>(null); // Specify that error can be string or null
+    const [contract, setContract] = useState<ethers.Contract | null>(null);
+    const [contractABI, setContractABI] = useState<any>(null);
+    const [contractAddress, setContractAddress] = useState<string>('');
+    const [voteName, setVoteName] = useState('');
+    const [startVoteTime, setStartVoteTime] = useState('');
+    const [endVoteTime, setEndVoteTime] = useState('');
+    const [groupId, setGroupId] = useState('');
+    const [error, setError] = useState<string | null>(null);
 
-  //All this part will be changed when we will deploy the functionality that the use is deploing the smart contract!
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const abiResponse = await fetch('/abi&address/ContractABI.json');
-        if (!abiResponse.ok) throw new Error(`Failed to fetch ABI: Status ${abiResponse.status}`);
-        if (!abiResponse.headers.get("content-type")?.includes("application/json")) {
-          throw new Error("Not a JSON response");
-        }
-        const abiData = await abiResponse.json();
-        setContractABI(abiData.contractABI);
-  
-        const addressResponse = await fetch('/abi&address/ContractAddress.json');
-        if (!addressResponse.ok) throw new Error(`Failed to fetch Address: Status ${addressResponse.status}`);
-        if (!addressResponse.headers.get("content-type")?.includes("application/json")) {
-          throw new Error("Not a JSON response");
-        }
-        const addressData = await addressResponse.json();
-        setContractAddress(addressData.contractAddress);
-        console.log(abiData);  // Check what's inside abiData
-        console.log(addressData);  // Check address data
+    useEffect(() => {
+      async function fetchData() {
+          try {
+              const docRef = doc(db, 'contracts', 'YOUR_CONTRACT_DOC_ID'); // Correct way to reference a document
+              const docSnap = await getDoc(docRef);
 
-      } catch (error) {
-        console.error('Error loading contract data:', error);
-        setError('Failed to load contract data. Please check the console for more details.');
+              if (!docSnap.exists()) {
+                  throw new Error('No such document!');
+              }
+
+              const data = docSnap.data();
+              setContractABI(data?.abi);
+              setContractAddress(data?.address);
+
+              if (data?.abi && data?.address && window.ethereum) {
+                  const contractInstance = await createContract(window.ethereum, data.address, data.abi);
+                  setContract(contractInstance);
+              }
+          } catch (error) {
+              console.error('Error loading contract data:', error);
+              setError('Failed to load contract data. Please check the console for more details.');
+          }
       }
-    }
-  
-    fetchData();
+
+      fetchData();
   }, []);
 
-  if (!contractABI || !contractAddress) {
-    return <div>{error || 'Loading contract data...'}</div>;  // Use the error state in the UI
-  }
-  
-  
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!window.ethereum) {
-      alert('Please install MetaMask to interact with the blockchain.');
-      return;
+    if (!contract) {
+        return <div>{error || 'Loading contract data...'}</div>;
     }
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner(); // Make sure to await the Promise here
-    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
 
-    try {
-      const tx = await contract.createVote(
-        voteName,
-        BigInt(Date.parse(startVoteTime) / 1000),
-        BigInt(Date.parse(endVoteTime) / 1000),
-        BigInt(groupId)
-      );
-      await tx.wait();
-      alert('Vote successfully created!');
-    }  catch (error: unknown) {
-      // Check if error is an instance of Error
-      if (error instanceof Error) {
-        alert(`Failed to create the vote: ${error.message}`);
-      } else {
-        // Handle cases where the error is not an Error instance
-        alert('Failed to create the vote due to an unexpected error.');
-      }
-    }
-  };
+        if (!contract) {
+            alert('Contract is not loaded.');
+            return;
+        }
 
-  // if (!contractABI || !contractAddress) {
-  //   return error ? <div>Error loading contract data. Please check the console for more information.</div> : <div>Loading contract data...</div>;
-  // }
-  
+        try {
+            const tx = await contract.createVote(
+                voteName,
+                BigInt(Date.parse(startVoteTime) / 1000),
+                BigInt(Date.parse(endVoteTime) / 1000),
+                BigInt(groupId)
+            );
+            await tx.wait();
+            alert('Vote successfully created!');
+        }  catch (error: any) {
+            alert(`Failed to create the vote: ${error.message}`);
+        }
+    };
 
   return (
     <form onSubmit={handleSubmit}>

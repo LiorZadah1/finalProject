@@ -36,6 +36,7 @@ const VotingProcess: React.FC = () => {
         const voteID = 1; // Example vote ID, this should be dynamically determined based on the context.
         const optionsCount = await contract.getOptionsCount(voteID);
         const optionsArray: Option[] = [];
+        // -----> for each is better to avoid tread blocker --- use java script options
         for (let i = 0; i < optionsCount; i++) {
           const option = await contract.getOptionDetails(voteID, i);
           optionsArray.push({
