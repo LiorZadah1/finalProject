@@ -23,3 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 voting-system-80cc2-firebase-adminsdk-8ithe-02ecd93008.json
+firebaseConfig.ts
