@@ -9,6 +9,9 @@ import UserManagement from './components/ManagementComponent';
 import { db } from './firebaseConfig'; // Your Firebase configuration
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
+// After we will deploy the project in project it will work because we will have the data after deploy/////
+import contractArtifact from '../artifacts/contracts/votingSystem.sol/votingSystem.json';
+
 
 
 const App = () => {
@@ -24,7 +27,7 @@ const App = () => {
         // Check if the connection was successful
         if (ethereum.isConnected()) {
             const provider = new ethers.BrowserProvider(ethereum);
-            const signer = provider.getSigner();
+            const signer = await provider.getSigner();
 
             // Using ABI and bytecode from the deployed contract!!!!!!!!!!!!!!!!!!!!!!
             const abi = contractArtifact.abi;
@@ -32,8 +35,9 @@ const App = () => {
 
             // Deploy the contract
             const contractFactory = new ethers.ContractFactory(abi, bytecode, signer);
-            const contract = await contractFactory.deploy();
+            const contract = await contractFactory.deploy() as ethers.Contract;
             await contract.deployed();
+            
 
             // Save the contract address and ABI to Firestore
             const contractData = {
@@ -41,7 +45,14 @@ const App = () => {
                 abi: JSON.stringify(abi)  // Storing ABI as a string in Firestore
             };
             // insert to data base
-            await setDoc(doc(db, "contracts", contract.address), contractData);
+            // await setDoc(doc(db, "contracts", contract.address), contractData);
+            if (typeof contract.address === 'string') {
+              const docRef = doc(db, "contracts", contract.address);
+              await setDoc(docRef, contractData);
+              console.log('Contract deployed and data saved:', contractData);
+          } else {
+              console.error('Contract address is not a string:', contract.address);
+          }
 
             console.log('Contract deployed and data saved:', contractData);
         } else {
