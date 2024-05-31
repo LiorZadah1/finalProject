@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { createContract } from '../utils/createContract';
+import { db } from '../firebaseConfig'; // Import Firestore configuration
+import { doc, getDoc } from 'firebase/firestore';
 import { ethers } from 'ethers';
-
-// Import ABI and contract address from local files.
-const contractABI = require('/abi&address/ContractABI.json').contractABI;
-const contractAddress = require('/abi&address/ContractAddress.json').contractAddress;
+import { useMetaMask } from "metamask-react";
 
 // Define the structure of an option as expected from the smart contract.
 interface Option {
@@ -11,81 +11,80 @@ interface Option {
   countOption: number;
 }
 
-const VotingProcess: React.FC = () => {
-  // State for holding the list of voting options.
-  const [options, setOptions] = useState<Option[]>([]);
-  // State for tracking the currently selected voting option by the user.
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  // State to indicate if a vote is currently being submitted.
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  // State to track if the vote has been successfully submitted.
-  const [voteSubmitted, setVoteSubmitted] = useState(false);
 
-  // useEffect hook to setup the contract interaction when the component mounts.
+const VotingProcess: React.FC = () => {
+  const [options, setOptions] = useState<Option[]>([]);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voteSubmitted, setVoteSubmitted] = useState(false);
+  const [contract, setContract] = useState<ethers.Contract | null>(null);
+  const { status, account } = useMetaMask();
   useEffect(() => {
     async function setupContract() {
-      // Connect to Ethereum network using a browser provider.
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      // Get a signer from the provider, which is required to send transactions.
-      const signer = await provider.getSigner();
-      // Create a contract object to interact with the smart contract.
-      const contract = new ethers.Contract(contractAddress, contractABI, signer);
+      try {
+        //Check if the user is connected and fetch the params using his address
+        if (status === "connected") {
+          const docRef = doc(db, 'contracts', account);
+          const docSnap = await getDoc(docRef);
 
-      // Function to fetch voting options from the smart contract.
-      async function fetchOptions() {
-        const voteID = 1; // Example vote ID, this should be dynamically determined based on the context.
-        const optionsCount = await contract.getOptionsCount(voteID);
-        const optionsArray: Option[] = [];
-        // -----> for each is better to avoid tread blocker --- use java script options
-        for (let i = 0; i < optionsCount; i++) {
-          const option = await contract.getOptionDetails(voteID, i);
-          optionsArray.push({
-            optionName: option.optionName,
-            countOption: option.countOption
-          });
+          if (!docSnap.exists()) {
+            throw new Error('No contract information available!');
+          }
+
+          const { abi, address } = docSnap.data();
+          if (!abi || !address) {
+            throw new Error('Contract ABI or address is missing.');
+          }
+
+          const contractInstance = await createContract(window.ethereum, address, abi);
+          setContract(contractInstance);
+          await fetchOptions(contractInstance);
         }
-        // Update the state with the fetched options.
-        setOptions(optionsArray);
+      } catch (error) {
+        console.error('Error setting up the contract:', error);
       }
-
-      // Execute the fetch function.
-      await fetchOptions();
     }
 
-    // Initialize the contract setup and catch any errors that occur.
-    setupContract().catch(console.error);
+    async function fetchOptions(contract) {
+      const voteID = 1; // Example vote ID, dynamically determine this as needed
+      const optionsCount = await contract.getOptionsCount(voteID);
+    
+      // Create an array of fetch promises
+      const fetchPromises = Array.from({ length: optionsCount }, async (_, index) => {
+        const option = await contract.getOptionDetails(voteID, index);
+        return {
+          optionName: option.optionName,
+          countOption: option.countOption
+        };
+      });
+    
+      // Wait for all promises to resolve and then set the options state
+      const optionsArray: Option[] = await Promise.all(fetchPromises);
+      setOptions(optionsArray);
+    }
+    
+
+    setupContract();
   }, []);
 
-  // Function to handle when a user submits their vote.
   const handleVote = async () => {
-    // Do nothing if no option is selected.
-    if (selectedOption === null) return;
-    // Indicate that a vote submission is in progress.
+    if (selectedOption === null || !contract) return;
     setIsSubmitting(true);
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const contract = new ethers.Contract(contractAddress, contractABI, signer);
-
     try {
-      // Call the castVote method from the smart contract.
       await contract.castVote(1, selectedOption);
-      // Update the state to show that the vote has been submitted.
       setVoteSubmitted(true);
     } catch (error) {
       console.error('Error submitting vote:', error);
     } finally {
-      // Reset the submitting state regardless of the outcome.
       setIsSubmitting(false);
     }
   };
 
-  // Render a thank you message if the vote has been submitted.
   if (voteSubmitted) {
     return <div>Thank you for voting!</div>;
   }
 
-  // Main component rendering.
   return (
     <div>
       <h1>Vote on an Option</h1>

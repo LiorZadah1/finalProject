@@ -3,56 +3,65 @@ import { ethers } from 'ethers';
 import { createContract } from '../utils/createContract';
 import {db} from '../firebaseConfig'; // Import Firestore configuration
 import { doc, getDoc } from 'firebase/firestore';
+import { useMetaMask } from "metamask-react";
 
 const ElectionForm: React.FC = () => {
     const [contract, setContract] = useState<ethers.Contract | null>(null);
-    const [contractABI, setContractABI] = useState<any>(null);
-    const [contractAddress, setContractAddress] = useState<string>('');
     const [voteName, setVoteName] = useState('');
     const [startVoteTime, setStartVoteTime] = useState('');
     const [endVoteTime, setEndVoteTime] = useState('');
     const [groupId, setGroupId] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
+    const { status,account } = useMetaMask();
     useEffect(() => {
       async function fetchData() {
           try {
-              const docRef = doc(db, 'contracts', 'YOUR_CONTRACT_DOC_ID'); // Correct way to reference a document
+            if (status === "connected") {
+              const docRef = doc(db, 'contracts', account);
               const docSnap = await getDoc(docRef);
-
+  
               if (!docSnap.exists()) {
-                  throw new Error('No such document!');
+                  throw new Error('No contract information available!');
               }
-
-              const data = docSnap.data();
-              setContractABI(data?.abi);
-              setContractAddress(data?.address);
-
-              if (data?.abi && data?.address && window.ethereum) {
-                  const contractInstance = await createContract(window.ethereum, data.address, data.abi);
+  
+              const { abi, address } = docSnap.data();
+              if (!abi || !address) {
+                  throw new Error('Contract ABI or address is missing.');
+              }
+  
+              if (window.ethereum) {
+                  const contractInstance = await createContract(window.ethereum, address, abi);
                   setContract(contractInstance);
+              } else {
+                  throw new Error('Ethereum object is not available.');
               }
-          } catch (error) {
-              console.error('Error loading contract data:', error);
-              setError('Failed to load contract data. Please check the console for more details.');
+            }
+          } catch (error: unknown) {
+              if (error instanceof Error) {
+                  console.error('Failed to load contract:', error.message);
+                  setError(error.message);
+              } else {
+                  console.error('An unexpected error occurred');
+                  setError('An unexpected error occurred');
+              }
+          } finally {
+              setIsLoading(false);
           }
       }
-
+  
       fetchData();
   }, []);
+    if (isLoading) {
+        return <div>Loading contract data...</div>;
+    }
 
     if (!contract) {
-        return <div>{error || 'Loading contract data...'}</div>;
+        return <div>{error || 'Contract is not loaded.'}</div>;
     }
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-
-        if (!contract) {
-            alert('Contract is not loaded.');
-            return;
-        }
-
         try {
             const tx = await contract.createVote(
                 voteName,
@@ -62,9 +71,15 @@ const ElectionForm: React.FC = () => {
             );
             await tx.wait();
             alert('Vote successfully created!');
-        }  catch (error: any) {
-            alert(`Failed to create the vote: ${error.message}`);
-        }
+        } catch (error: unknown) {
+              if (error instanceof Error) {
+                  console.error('Failed to load contract:', error.message);
+                  setError(error.message);
+              } else {
+                  console.error('An unexpected error occurred');
+                  setError('An unexpected error occurred');
+              }
+      }
     };
 
   return (

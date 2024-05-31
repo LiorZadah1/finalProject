@@ -9,16 +9,16 @@ import UserManagement from './components/ManagementComponent';
 import { db } from './firebaseConfig'; // Your Firebase configuration
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
-// After we will deploy the project in project it will work because we will have the data after deploy/////
+//\\\\\\\\\\After we will deploy the project in project it will work because we will have the data after deploy/////
 import contractArtifact from '../artifacts/contracts/votingSystem.sol/votingSystem.json';
 
 
 
 const App = () => {
-  const { status, connect, account, chainId, ethereum } = useMetaMask();
+  const { status, connect, account, ethereum } = useMetaMask();
 
   const deployAndConnect = async () => {
-    const { connect, ethereum } = useMetaMask();
+    //const { connect, ethereum } = useMetaMask();
 
     try {
         // Attempt to connect to MetaMask
@@ -46,8 +46,8 @@ const App = () => {
             };
             // insert to data base
             // await setDoc(doc(db, "contracts", contract.address), contractData);
-            if (typeof contract.address === 'string') {
-              const docRef = doc(db, "contracts", contract.address);
+            if (typeof account === 'string') {
+              const docRef = doc(db, "contracts", account);
               await setDoc(docRef, contractData);
               console.log('Contract deployed and data saved:', contractData);
           } else {

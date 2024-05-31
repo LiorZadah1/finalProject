@@ -1,30 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { createContract } from '../utils/createContract';
 import { Contract } from 'ethers';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebaseConfig';  
+import { useMetaMask } from "metamask-react";
 
 const ContractInteractionPage: React.FC = () => {
     const [contract, setContract] = useState<Contract | null>(null);
-
+    const [loading, setLoading] = useState(true);
+    const { status, account } = useMetaMask();
     useEffect(() => {
-        const contractAddress = "your_contract_address_here";
-        // You should specify the type for your ABI or import it if you have a type definition
-        const contractABI = require("../path_to_contract_ABI.json");
+        const loadContractDetails = async () => {
+            try {
+                // Assuming the document ID of your contract details is known or set as an environment variable
+                if (status === "connected") {
+                    const docRef = doc(db, 'contracts', account);
+                    const docSnap = await getDoc(docRef);
 
-        if (window.ethereum) {
-            createContract(window.ethereum, contractAddress, contractABI)
-                .then(setContract)
-                .catch(console.error);
-        }
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (window.ethereum && data.address && data.abi) {
+                        const loadedContract = await createContract(window.ethereum, data.address, JSON.parse(data.abi));
+                        setContract(loadedContract);
+                    } else {
+                        throw new Error("Contract data is incomplete or missing.");
+                    }
+                } else {
+                    throw new Error("No contract data found in Firestore.");
+                }
+            }
+            } catch (error) {
+                console.error("Error loading contract data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadContractDetails();
     }, []);
 
-    if (!contract) {
+    if (loading) {
         return <div>Loading contract...</div>;
     }
 
-    // Example interaction (assuming your contract has a callable function)
     const handleContractInteraction = async () => {
+        if (!contract) {
+            console.error("Contract is not loaded.");
+            return;
+        }
         try {
-            if (!contract) throw new Error("Contract is not loaded.");
             // You must replace `yourContractMethod` with a real method name from your contract
             const response = await contract.yourContractMethod();
             console.log('Contract response:', response);
@@ -36,7 +60,9 @@ const ContractInteractionPage: React.FC = () => {
     return (
         <div>
             <h1>Contract Interaction</h1>
-            <button onClick={handleContractInteraction}>Interact with Contract</button>
+            <button onClick={handleContractInteraction} disabled={!contract}>
+                Interact with Contract
+            </button>
         </div>
     );
 };
