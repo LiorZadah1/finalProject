@@ -13,7 +13,8 @@ const ElectionForm: React.FC = () => {
     const [groupId, setGroupId] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const { status,account } = useMetaMask();
+    const { status, account } = useMetaMask();
+
     useEffect(() => {
       async function fetchData() {
           try {
