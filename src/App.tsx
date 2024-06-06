@@ -10,7 +10,8 @@ import { db } from './firebaseConfig'; // Your Firebase configuration
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 //\\\\\\\\\\After we will deploy the project in project it will work because we will have the data after deploy/////
-import contractArtifact from '../artifacts/contracts/votingSystem.sol/votingSystem.json';
+// import contractArtifact from '/artifacts/contracts/votingSystem.sol/votingSystem.json';
+import contractArtifact from '../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json'
 
 
 

@@ -3,6 +3,8 @@ import { ethers } from 'ethers';
 import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
+import { useMetaMask } from "metamask-react";
+
 import {
   Container,
   Typography,
@@ -27,12 +29,14 @@ const ParticipatedVotes: React.FC = () => {
   const [votes, setVotes] = useState<Vote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { status, account } = useMetaMask();  
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const docRef = doc(db, 'contracts', process.env.REACT_APP_CONTRACT_DOC_ID || 'default_doc_id');
-        const docSnap = await getDoc(docRef);
+        if (status === "connected") {
+            const docRef = doc(db, 'contracts', account);
+            const docSnap = await getDoc(docRef);
 
         if (!docSnap.exists()) {
           throw new Error('No contract information available!');
@@ -45,6 +49,7 @@ const ParticipatedVotes: React.FC = () => {
 
         const contractInstance = await createContract(window.ethereum, address, abi);
         await fetchParticipatedVotes(contractInstance);
+        }
       } catch (error: unknown) {
         if (error instanceof Error) {
           console.error('Failed to load contract:', error.message);
@@ -59,7 +64,11 @@ const ParticipatedVotes: React.FC = () => {
     }
 
     async function fetchParticipatedVotes(contract: ethers.Contract) {
-      const userAddress = await contract.signer.getAddress();
+      // const userAddress = await contract.getAddress;
+      //Switch to working in the longer way because we didnt found getAddress();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const userAddress = await signer.getAddress()
       const participatedVotes = await contract.getParticipatedVotes(userAddress);
       const formattedVotes = participatedVotes.map((vote: any) => ({
         id: vote.id.toString(),
