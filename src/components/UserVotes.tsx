@@ -4,7 +4,6 @@ import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useMetaMask } from "metamask-react";
-
 import {
   Container,
   Typography,
@@ -16,7 +15,10 @@ import {
   TableRow,
   Paper,
   CircularProgress,
+  Box,
+  Fab
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 
 interface Vote {
   id: string;
@@ -25,30 +27,30 @@ interface Vote {
   endDate: string;
 }
 
-const ParticipatedVotes: React.FC = () => {
+const UserVotes: React.FC = () => {
   const [votes, setVotes] = useState<Vote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { status, account } = useMetaMask();  
+  const { status, account } = useMetaMask();
 
   useEffect(() => {
     async function fetchData() {
       try {
-        if (status === "connected") {
-            const docRef = doc(db, 'contracts', account);
-            const docSnap = await getDoc(docRef);
+        if (status === "connected" && account) {
+          const docRef = doc(db, 'contracts', account);
+          const docSnap = await getDoc(docRef);
 
-        if (!docSnap.exists()) {
-          throw new Error('No contract information available!');
-        }
+          if (!docSnap.exists()) {
+            throw new Error('No contract information available!');
+          }
 
-        const { abi, address } = docSnap.data();
-        if (!abi || !address) {
-          throw new Error('Contract ABI or address is missing.');
-        }
+          const { abi, address } = docSnap.data();
+          if (!abi || !address) {
+            throw new Error('Contract ABI or address is missing.');
+          }
 
-        const contractInstance = await createContract(window.ethereum, address, abi);
-        await fetchParticipatedVotes(contractInstance);
+          const contractInstance = await createContract(window.ethereum, address, abi);
+          await fetchUserVotes(contractInstance);
         }
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -63,14 +65,14 @@ const ParticipatedVotes: React.FC = () => {
       }
     }
 
-    async function fetchParticipatedVotes(contract: ethers.Contract) {
+    async function fetchUserVotes(contract: ethers.Contract) {
       // const userAddress = await contract.getAddress;
       //Switch to working in the longer way because we didnt found getAddress();
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress()
-      const participatedVotes = await contract.getParticipatedVotes(userAddress);
-      const formattedVotes = participatedVotes.map((vote: any) => ({
+      const userVotes = await contract.getUserVotes(userAddress);
+      const formattedVotes = userVotes.map((vote: any) => ({
         id: vote.id.toString(),
         name: vote.name,
         startDate: new Date(vote.startDate * 1000).toISOString(),
@@ -80,13 +82,15 @@ const ParticipatedVotes: React.FC = () => {
     }
 
     fetchData();
-  }, []);
+  }, [status, account]);
 
   if (loading) {
     return (
       <Container>
-        <CircularProgress />
-        <Typography>Loading participated votes...</Typography>
+        <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+          <CircularProgress />
+          <Typography>Loading user votes...</Typography>
+        </Box>
       </Container>
     );
   }
@@ -102,10 +106,10 @@ const ParticipatedVotes: React.FC = () => {
   return (
     <Container>
       <Typography variant="h4" component="h1" gutterBottom>
-        Votes I've Participated In
+        My Created Votes
       </Typography>
       {votes.length > 0 ? (
-        <TableContainer component={Paper} style={{ marginTop: '20px' }}>
+        <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
@@ -127,11 +131,14 @@ const ParticipatedVotes: React.FC = () => {
         </TableContainer>
       ) : (
         <Typography variant="body1" component="p">
-          No votes participated in yet.
+          No votes created yet.
         </Typography>
       )}
+      <Fab color="primary" aria-label="add" style={{ position: 'fixed', bottom: 16, right: 16 }}>
+        <AddIcon />
+      </Fab>
     </Container>
   );
 };
 
-export default ParticipatedVotes;
+export default UserVotes;

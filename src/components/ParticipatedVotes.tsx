@@ -16,6 +16,7 @@ import {
   TableRow,
   Paper,
   CircularProgress,
+  Box,
 } from '@mui/material';
 
 interface Vote {
@@ -34,21 +35,21 @@ const ParticipatedVotes: React.FC = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        if (status === "connected") {
-            const docRef = doc(db, 'contracts', account);
-            const docSnap = await getDoc(docRef);
+        if (status === "connected" && account) {
+          const docRef = doc(db, 'contracts', account);
+          const docSnap = await getDoc(docRef);
 
-        if (!docSnap.exists()) {
-          throw new Error('No contract information available!');
-        }
+          if (!docSnap.exists()) {
+            throw new Error('No contract information available!');
+          }
 
-        const { abi, address } = docSnap.data();
-        if (!abi || !address) {
-          throw new Error('Contract ABI or address is missing.');
-        }
+          const { abi, address } = docSnap.data();
+          if (!abi || !address) {
+            throw new Error('Contract ABI or address is missing.');
+          }
 
-        const contractInstance = await createContract(window.ethereum, address, abi);
-        await fetchParticipatedVotes(contractInstance);
+          const contractInstance = await createContract(window.ethereum, address, abi);
+          await fetchParticipatedVotes(contractInstance);
         }
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -64,11 +65,10 @@ const ParticipatedVotes: React.FC = () => {
     }
 
     async function fetchParticipatedVotes(contract: ethers.Contract) {
-      // const userAddress = await contract.getAddress;
-      //Switch to working in the longer way because we didnt found getAddress();
+      //took the long way so we could use userAddress using Signer
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const userAddress = await signer.getAddress()
+      const userAddress = await signer.getAddress();
       const participatedVotes = await contract.getParticipatedVotes(userAddress);
       const formattedVotes = participatedVotes.map((vote: any) => ({
         id: vote.id.toString(),
@@ -80,13 +80,15 @@ const ParticipatedVotes: React.FC = () => {
     }
 
     fetchData();
-  }, []);
+  }, [status, account]);
 
   if (loading) {
     return (
       <Container>
-        <CircularProgress />
-        <Typography>Loading participated votes...</Typography>
+        <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+          <CircularProgress />
+          <Typography>Loading participated votes...</Typography>
+        </Box>
       </Container>
     );
   }

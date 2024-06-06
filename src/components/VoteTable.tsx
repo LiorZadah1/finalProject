@@ -16,7 +16,9 @@ import {
   TableRow,
   Paper,
   Button,
-  Typography
+  Typography,
+  CircularProgress,
+  Box
 } from '@mui/material';
 
 interface Vote {
@@ -32,21 +34,35 @@ const VoteTable = () => {
   const [votes, setVotes] = useState<Vote[]>([]);
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchContractDetails = async () => {
-      if (status === "connected") {
-        const docRef = doc(db, 'contracts', account);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (ethereum) {
-            const contractInstance = await createContract(ethereum, data.address, data.abi);
-            setContract(contractInstance);
+      if (status === "connected" && account) {
+        try {
+          const docRef = doc(db, 'contracts', account);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (ethereum) {
+              const contractInstance = await createContract(ethereum, data.address, data.abi);
+              setContract(contractInstance);
+            }
+          } else {
+            throw new Error("Contract details not found!");
           }
-        } else {
-          console.error("Contract details not found!");
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            console.error('Failed to load contract:', error.message);
+            setError(error.message);
+          } else {
+            console.error('An unexpected error occurred');
+            setError('An unexpected error occurred');
+          }
+        } finally {
+          setLoading(false);
         }
       }
     };
@@ -83,6 +99,25 @@ const VoteTable = () => {
   const filteredVotes = votes.filter(vote =>
     vote.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <Container>
+        <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+          <CircularProgress />
+          <Typography>Loading votes...</Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <Typography color="error">{error}</Typography>
+      </Container>
+    );
+  }
 
   return (
     <Container>

@@ -4,6 +4,18 @@ import { db } from '../firebaseConfig'; // Import Firestore configuration
 import { doc, getDoc } from 'firebase/firestore';
 import { ethers } from 'ethers';
 import { useMetaMask } from "metamask-react";
+import {
+  Container,
+  Typography,
+  FormControl,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  Button,
+  CircularProgress,
+  Box,
+  Paper
+} from '@mui/material';
 
 // Define the structure of an option as expected from the smart contract.
 interface Option {
@@ -11,19 +23,20 @@ interface Option {
   countOption: number;
 }
 
-
 const VotingProcess: React.FC = () => {
   const [options, setOptions] = useState<Option[]>([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [voteSubmitted, setVoteSubmitted] = useState(false);
   const [contract, setContract] = useState<ethers.Contract | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { status, account } = useMetaMask();
+
   useEffect(() => {
     async function setupContract() {
       try {
-        //Check if the user is connected and fetch the params using his address
-        if (status === "connected") {
+        if (status === "connected" && account) {
           const docRef = doc(db, 'contracts', account);
           const docSnap = await getDoc(docRef);
 
@@ -40,16 +53,23 @@ const VotingProcess: React.FC = () => {
           setContract(contractInstance);
           await fetchOptions(contractInstance);
         }
-      } catch (error) {
-        console.error('Error setting up the contract:', error);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error('Error setting up the contract:', error.message);
+          setError(error.message);
+        } else {
+          console.error('An unexpected error occurred');
+          setError('An unexpected error occurred');
+        }
+      } finally {
+        setLoading(false);
       }
     }
 
-    async function fetchOptions(contract) {
+    async function fetchOptions(contract: ethers.Contract) {
       const voteID = 1; // Example vote ID, dynamically determine this as needed
       const optionsCount = await contract.getOptionsCount(voteID);
-    
-      // Create an array of fetch promises
+
       const fetchPromises = Array.from({ length: optionsCount }, async (_, index) => {
         const option = await contract.getOptionDetails(voteID, index);
         return {
@@ -57,15 +77,13 @@ const VotingProcess: React.FC = () => {
           countOption: option.countOption
         };
       });
-    
-      // Wait for all promises to resolve and then set the options state
+
       const optionsArray: Option[] = await Promise.all(fetchPromises);
       setOptions(optionsArray);
     }
-    
 
     setupContract();
-  }, []);
+  }, [status, account]);
 
   const handleVote = async () => {
     if (selectedOption === null || !contract) return;
@@ -81,31 +99,67 @@ const VotingProcess: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <Container>
+        <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+          <CircularProgress />
+          <Typography>Loading contract data...</Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <Typography color="error">{error}</Typography>
+      </Container>
+    );
+  }
+
   if (voteSubmitted) {
-    return <div>Thank you for voting!</div>;
+    return (
+      <Container>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Thank you for voting!
+        </Typography>
+      </Container>
+    );
   }
 
   return (
-    <div>
-      <h1>Vote on an Option</h1>
-      {options.map((option, index) => (
-        <div key={index}>
-          <label>
-            <input
-              type="radio"
-              name="option"
-              value={index}
-              onChange={() => setSelectedOption(index)}
-              disabled={isSubmitting}
-            />
-            {option.optionName} (Votes: {option.countOption})
-          </label>
-        </div>
-      ))}
-      <button onClick={handleVote} disabled={isSubmitting || selectedOption === null}>
-        Submit Vote
-      </button>
-    </div>
+    <Container>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Vote on an Option
+      </Typography>
+      <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
+        <FormControl component="fieldset">
+          <RadioGroup
+            value={selectedOption?.toString() || ''}
+            onChange={(e) => setSelectedOption(parseInt(e.target.value))}
+          >
+            {options.map((option, index) => (
+              <FormControlLabel
+                key={index}
+                value={index.toString()}
+                control={<Radio disabled={isSubmitting} />}
+                label={`${option.optionName} (Votes: ${option.countOption})`}
+              />
+            ))}
+          </RadioGroup>
+        </FormControl>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleVote}
+          disabled={isSubmitting || selectedOption === null}
+          style={{ marginTop: '20px' }}
+        >
+          Submit Vote
+        </Button>
+      </Paper>
+    </Container>
   );
 };
 
