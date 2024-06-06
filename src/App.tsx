@@ -1,16 +1,15 @@
 //import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
+import { ethers , ContractFactory } from 'ethers';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useMetaMask } from "metamask-react";
-import HomePage from './components/HomePage';
+import { db } from './firebaseConfig'; // Your Firebase configuration
+//import { initializeApp } from 'firebase/app';
+import { doc, setDoc } from 'firebase/firestore';
+import VoteTable from './components/VoteTable';
 import ElectionForm from './components/ElectionForm';
 import VoteResults from './components/ResultsComponent';
+import VotingComponent from './components/VotingComponent';
 import UserManagement from './components/ManagementComponent';
-import { db } from './firebaseConfig'; // Your Firebase configuration
-import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-//\\\\\\\\\\After we will deploy the project in project it will work because we will have the data after deploy/////
-// import contractArtifact from '/artifacts/contracts/votingSystem.sol/votingSystem.json';
 import contractArtifact from '../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json'
 
 
@@ -26,23 +25,25 @@ const App = () => {
         await connect();  // This uses MetaMask's connect function which prompts the user
 
         // Check if the connection was successful
-        if (ethereum.isConnected()) {
+        if (ethereum.isConnected() && window.ethereum !== "undefined") {
             const provider = new ethers.BrowserProvider(ethereum);
             const signer = await provider.getSigner();
 
-            // Using ABI and bytecode from the deployed contract!!!!!!!!!!!!!!!!!!!!!!
+            // Using ABI and bytecode from the deployed contract
             const abi = contractArtifact.abi;
             const bytecode = contractArtifact.bytecode;
 
-            // Deploy the contract
-            const contractFactory = new ethers.ContractFactory(abi, bytecode, signer);
-            const contract = await contractFactory.deploy() as ethers.Contract;
-            await contract.deployed();
+            //Deploy the contract - GPT
+            // const contractFactory = new ethers.ContractFactory(abi, bytecode, signer);
+            // const contract = await contractFactory.deploy() as ethers.Contract;
+            // await contract.deployed();
             
-
+            // Itzhak
+              const factory = new ContractFactory(abi, bytecode, signer);      
+              const contract = await factory.deploy();
             // Save the contract address and ABI to Firestore
             const contractData = {
-                address: contract.address,
+                address: contractArtifact.bytecode,
                 abi: JSON.stringify(abi)  // Storing ABI as a string in Firestore
             };
             // insert to data base
@@ -52,7 +53,7 @@ const App = () => {
               await setDoc(docRef, contractData);
               console.log('Contract deployed and data saved:', contractData);
           } else {
-              console.error('Contract address is not a string:', contract.address);
+              console.error('Contract address is not a string:', contractArtifact.bytecode);
           }
 
             console.log('Contract deployed and data saved:', contractData);
@@ -74,8 +75,9 @@ const App = () => {
     return (
       <Router>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<VoteTable />} />
           <Route path="/election-form" element={<ElectionForm />} />
+          <Route path="/voting-component" element={<VotingComponent />} />
           <Route path="/vote-results" element={<VoteResults />} />
           <Route path="/user-management" element={<UserManagement />} />
         </Routes>
