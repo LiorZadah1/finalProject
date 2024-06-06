@@ -1,13 +1,21 @@
 {
-  "name": "hardhat",
+  "name": "hardhat-tutorial",
   "version": "1.0.0",
-  "description": "Creating hardhat for our progect",
+  "description": "hardhat for backEnd",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LiorZadah1/finalProject-backEnd.git"
+  },
   "author": "",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LiorZadah1/finalProject-backEnd/issues"
+  },
+  "homepage": "https://github.com/LiorZadah1/finalProject-backEnd#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "hardhat": "^2.22.3"

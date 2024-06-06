@@ -1,0 +1,79 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\finalProject\\BackEnd\\finalProject-backEnd\\hardhat-tutorial\\contracts\\VotingSystem.sol": {
+      "lastModificationDate": 1715701697494,
+      "contentHash": "4b7131811202de6406d78c4c48b1b4e7",
+      "sourceName": "contracts/VotingSystem.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "hardhat/console.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "VotingSystem"
+      ]
+    },
+    "C:\\finalProject\\BackEnd\\finalProject-backEnd\\hardhat-tutorial\\node_modules\\hardhat\\console.sol": {
+      "lastModificationDate": 1715603509832,
+      "contentHash": "896f68942c3a20e9ae3c3c5bfd3add54",
+      "sourceName": "hardhat/console.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.22 <0.9.0"
+      ],
+      "artifacts": [
+        "console"
+      ]
+    }
+  }
+}
