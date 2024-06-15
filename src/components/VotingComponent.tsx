@@ -39,21 +39,32 @@ const VotingProcess: React.FC = () => {
         if (status === "connected" && account) {
           const docRef = doc(db, 'contracts', account);
           const docSnap = await getDoc(docRef);
-
+      
           if (!docSnap.exists()) {
             throw new Error('No contract information available!');
           }
-
-          const { abi, address } = docSnap.data();
+      
+          const data = docSnap.data();
+          console.log("Raw data from Firestore:", data);
+      
+          // Validate the structure of the data
+          if (typeof data !== 'object' || !data) {
+            throw new Error('Invalid contract data format!');
+          }
+          console.log("here1");
+          const { abi, address } = data;
           if (!abi || !address) {
             throw new Error('Contract ABI or address is missing.');
           }
-
+          console.log("here2");
           const contractInstance = await createContract(window.ethereum, address, abi);
+          console.log("here3");
           setContract(contractInstance);
+          console.log("here4");
           await fetchOptions(contractInstance);
         }
-      } catch (error: unknown) {
+      }
+       catch (error: unknown) {
         if (error instanceof Error) {
           console.error('Error setting up the contract:', error.message);
           setError(error.message);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ethers, ContractFactory } from 'ethers';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useMetaMask } from "metamask-react";
@@ -31,10 +31,11 @@ const App = () => {
 
         const factory = new ContractFactory(abi, bytecode, signer);
         const contract = await factory.deploy();
+        //await contract.deploymentTransaction().wait();
         //await contract.deployed();
 
         const contractData = {
-          address: contract.address, // Correctly store the deployed contract address
+          address: contract.target, // Correctly store the deployed contract address
           abi: JSON.stringify(abi)
         };
 
@@ -43,7 +44,7 @@ const App = () => {
           await setDoc(docRef, contractData);
           console.log('Contract deployed and data saved:', contractData);
         } else {
-          console.error('Contract address is not a string:', contract.address);
+          console.error('Contract address is not a string:', contract.target);
         }
 
         console.log('Contract deployed and data saved:', contractData);
@@ -63,13 +64,15 @@ const App = () => {
   if (status === "connecting") return <div>Connecting... Check your MetaMask extension.</div>;
 
   if (status === "connected") {
+    console.log('the account you are connected with:', account);
     return (
       <Router>
         <AppBar position="static">
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               Voting System
-            </Typography>
+            </Typography> 
+            {/* make this a button also for the home page */}
             <Button color="inherit" href="/vote-table">Votes Table</Button>
             <Button color="inherit" href="/election-form">Election Form</Button>
             <Button color="inherit" href="/voting-component">Voting</Button>
