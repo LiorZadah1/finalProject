@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\finalProject\\BackEnd\\finalProject-backEnd\\hardhat-tutorial\\contracts\\VotingSystem.sol": {
-      "lastModificationDate": 1715701697494,
-      "contentHash": "4b7131811202de6406d78c4c48b1b4e7",
+      "lastModificationDate": 1716701687179,
+      "contentHash": "36103aac87d8fbfdc3dabea4d0df6389",
       "sourceName": "contracts/VotingSystem.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -40,7 +40,7 @@
       ]
     },
     "C:\\finalProject\\BackEnd\\finalProject-backEnd\\hardhat-tutorial\\node_modules\\hardhat\\console.sol": {
-      "lastModificationDate": 1715603509832,
+      "lastModificationDate": 1718447191315,
       "contentHash": "896f68942c3a20e9ae3c3c5bfd3add54",
       "sourceName": "hardhat/console.sol",
       "solcConfig": {
