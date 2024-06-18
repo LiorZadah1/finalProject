@@ -22,7 +22,16 @@ const config: HardhatUserConfig = {
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts"
-  }
+  },
+  networks: {
+    ganache: {
+        url: "http://127.0.0.1:7545/",
+        accounts: ["0x1934a25de6a1938e3eae0b1f9e602138ce54883bd2f85abe8e771d0a9a6dc9c3"]
+    },
+    localhost: {
+      url: "http://127.0.0.1:7545"
+    }
+}
 };
 
 export default config;
