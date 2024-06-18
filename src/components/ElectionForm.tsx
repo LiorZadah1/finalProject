@@ -18,8 +18,9 @@ const ElectionForm: React.FC = () => {
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [voteName, setVoteName] = useState('');
   const [startVoteTime, setStartVoteTime] = useState('');
-  const [endVoteTime, setEndVoteTime] = useState('');
+  const [voteDuration, setVoteDuration] = useState('');
   const [groupId, setGroupId] = useState('');
+  const [voteOptions, setVoteOptions] = useState(['']);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { status, account } = useMetaMask();
@@ -28,15 +29,15 @@ const ElectionForm: React.FC = () => {
     async function fetchData() {
       try {
         if (status === "connected" && account) {
-          const docRef = doc(db, 'contracts', account);
+          const docRef = doc(db, 'users', account);
           const docSnap = await getDoc(docRef);
 
           if (!docSnap.exists()) {
             throw new Error('No contract information available!');
           }
 
-          const { abi, address } = docSnap.data();
-          if (!abi || !address) {
+          const { abi, address, group } = docSnap.data();
+          if (!abi || !address || !group) {
             throw new Error('Contract ABI or address is missing.');
           }
 
@@ -80,14 +81,29 @@ const ElectionForm: React.FC = () => {
     );
   }
 
+  const handleOptionChange = (index: number, value: string) => {
+    const options = [...voteOptions];
+    options[index] = value;
+    setVoteOptions(options);
+  };
+
+  const addOption = () => {
+    if (voteOptions.length < 10) {
+      setVoteOptions([...voteOptions, '']);
+    } else {
+      setError('A maximum of 10 options are allowed.');
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
       const tx = await contract.createVote(
         voteName,
         BigInt(Date.parse(startVoteTime) / 1000),
-        BigInt(Date.parse(endVoteTime) / 1000),
-        BigInt(groupId)
+        BigInt(voteDuration),
+        BigInt(groupId),
+        voteOptions
       );
       await tx.wait();
       alert('Vote successfully created!');
@@ -132,13 +148,12 @@ const ElectionForm: React.FC = () => {
             </Grid>
             <Grid item xs={12}>
               <TextField
-                label="End Vote Time"
-                type="datetime-local"
+                label="Vote Duration (seconds)"
+                type="number"
                 variant="outlined"
                 fullWidth
-                InputLabelProps={{ shrink: true }}
-                value={endVoteTime}
-                onChange={(e) => setEndVoteTime(e.target.value)}
+                value={voteDuration}
+                onChange={(e) => setVoteDuration(e.target.value)}
               />
             </Grid>
             <Grid item xs={12}>
@@ -151,6 +166,24 @@ const ElectionForm: React.FC = () => {
                 onChange={(e) => setGroupId(e.target.value)}
               />
             </Grid>
+            {voteOptions.map((option, index) => (
+              <Grid item xs={12} key={index}>
+                <TextField
+                  label={`Option ${index + 1}`}
+                  variant="outlined"
+                  fullWidth
+                  value={option}
+                  onChange={(e) => handleOptionChange(index, e.target.value)}
+                />
+              </Grid>
+            ))}
+            {voteOptions.length < 10 && (
+              <Grid item xs={12}>
+                <Button onClick={addOption} variant="contained" fullWidth>
+                  Add Option
+                </Button>
+              </Grid>
+            )}
             {error && (
               <Grid item xs={12}>
                 <Typography color="error">{error}</Typography>

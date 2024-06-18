@@ -10,8 +10,8 @@ import ElectionForm from './components/ElectionForm';
 import VoteResults from './components/ResultsComponent';
 import VotingComponent from './components/VotingComponent';
 import UserManagement from './components/ManagementComponent';
-import contractArtifact from '../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json'
-import { AppBar, Toolbar, Typography, Button, CircularProgress, Container } from '@mui/material';
+import contractArtifact from '../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json';
+import { AppBar, Toolbar, Typography, Button, CircularProgress, Container, Box } from '@mui/material';
 
 const App = () => {
   const { status, connect, account, ethereum } = useMetaMask();
@@ -31,8 +31,6 @@ const App = () => {
 
         const factory = new ContractFactory(abi, bytecode, signer);
         const contract = await factory.deploy();
-        //await contract.deploymentTransaction().wait();
-        //await contract.deployed();
 
         const contractData = {
           address: contract.target, // Correctly store the deployed contract address
@@ -60,8 +58,40 @@ const App = () => {
 
   if (status === "initializing") return <div>Synchronisation with MetaMask ongoing...</div>;
   if (status === "unavailable") return <div>MetaMask not available</div>;
-  if (status === "notConnected") return <Button onClick={deployAndConnect} variant="contained" color="primary">Connect to MetaMask</Button>;
-  if (status === "connecting") return <div>Connecting... Check your MetaMask extension.</div>;
+  if (status === "notConnected") return (
+    <Container maxWidth="sm" style={{ marginTop: '2rem' }}>
+      <Button
+        onClick={deployAndConnect}
+        variant="contained"
+        color="primary"
+        fullWidth
+        style={{
+          padding: '1rem',
+          fontSize: '1.2rem',
+          backgroundColor: '#3f51b5',
+          color: '#fff',
+          textTransform: 'none',
+          boxShadow: '0 3px 5px 2px rgba(63, 81, 181, .3)'
+        }}
+      >
+        Connect to MetaMask
+      </Button>
+    </Container>
+  );
+  if (status === "connecting") return (
+    <Container maxWidth="sm" style={{ marginTop: '2rem' }}>
+      <Box textAlign="center" style={{
+        padding: '1rem',
+        fontSize: '1.5rem',
+        backgroundColor: '#f3f3f3',
+        color: '#333',
+        borderRadius: '8px',
+        boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .2)'
+      }}>
+        Connecting... Check your MetaMask extension.
+      </Box>
+    </Container>
+  );
 
   if (status === "connected") {
     console.log('the account you are connected with:', account);
@@ -69,10 +99,11 @@ const App = () => {
       <Router>
         <AppBar position="static">
           <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Voting System
-            </Typography> 
-            {/* make this a button also for the home page */}
+            <Button color="inherit" href="/" style={{ textTransform: 'none' }}>
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                Voting System
+              </Typography>
+            </Button>
             <Button color="inherit" href="/vote-table">Votes Table</Button>
             <Button color="inherit" href="/election-form">Election Form</Button>
             <Button color="inherit" href="/voting-component">Voting</Button>
