@@ -27,3 +27,4 @@ firebaseConfig.ts
 saveUsersToFirebase.js
 *.backup
 deploy.js
+.env

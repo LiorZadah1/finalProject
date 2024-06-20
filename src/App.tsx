@@ -6,16 +6,18 @@ import { db } from './firebaseConfig'; // Your Firebase configuration
 import { doc, setDoc } from 'firebase/firestore';
 import VoteTable from './components/VoteTable';
 import HomePage from './components/HomePage';
-import ElectionForm from './components/ElectionForm';
+import CreateVote from './components/CreateVote';
 import VoteResults from './components/ResultsComponent';
 import VotingComponent from './components/VotingComponent';
 import UserManagement from './components/ManagementComponent';
 import contractArtifact from '../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json';
 import { AppBar, Toolbar, Typography, Button, CircularProgress, Container, Box } from '@mui/material';
+import useCheckUser from './utils/checkUser';
 
 const App = () => {
   const { status, connect, account, ethereum } = useMetaMask();
   const [loading, setLoading] = useState(false);
+  const [isValidUser, userLoading] = useCheckUser();
 
   const deployAndConnect = async () => {
     try {
@@ -105,7 +107,9 @@ const App = () => {
               </Typography>
             </Button>
             <Button color="inherit" href="/vote-table">Votes Table</Button>
-            <Button color="inherit" href="/election-form">Election Form</Button>
+            {isValidUser && !userLoading && (
+              <Button color="inherit" href="/create-vote">Create New Vote</Button>
+            )}
             <Button color="inherit" href="/voting-component">Voting</Button>
             <Button color="inherit" href="/vote-results">Vote Results</Button>
             <Button color="inherit" href="/user-management">User Management</Button>
@@ -117,7 +121,7 @@ const App = () => {
               throw new Error('Function not implemented.');
             } } />} />
             <Route path="/vote-table" element={<VoteTable />} />
-            <Route path="/election-form" element={<ElectionForm />} />
+            <Route path="/create-vote" element={<CreateVote />} />
             <Route path="/voting-component" element={<VotingComponent />} />
             <Route path="/vote-results" element={<VoteResults />} />
             <Route path="/user-management" element={<UserManagement />} />
