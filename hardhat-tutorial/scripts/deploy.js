@@ -2,19 +2,19 @@ const { ethers } = require("hardhat");
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, getDocs, deleteDoc, doc, setDoc } = require('firebase/firestore');
 const fs = require('fs');
+require('dotenv').config();
 
 // Initialize Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyD1XQNm1iNTKIfDNA36Bx5Ar1OAUB73dOs",
-  clientId: "402500146746-ppj3t2kqb520k9t1opsjjdohnge55mij.apps.googleusercontent.com",
-  authDomain: "voting-system-80cc2.firebaseapp.com",
-  projectId: "voting-system-80cc2",
-  storageBucket: "voting-system-80cc2.appspot.com",
-  messagingSenderId: "402500146746",
-  appId: "1:402500146746:web:f7aeb327e3c2c2a771c703",
-  measurementId: "G-VEZFL81GBP"
+  apiKey: process.env.API_KEY,
+  clientId: process.env.CLIENT_ID,
+  authDomain: process.env.AUTH_DOMAIN,
+  projectId: process.env.PROJECT_ID,
+  storageBucket: process.env.STORAGE_BUCKET,
+  messagingSenderId: process.env.MESSAGING_SENDER_ID,
+  appId: process.env.APP_ID,
+  measurementId: process.env.MEASUREMENT_ID
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -54,7 +54,7 @@ async function main() {
       address: signer.address,
       contractAddress: contractAddress,
       abi: abi,
-      group: [] // Initially no participants
+      group: []       // Initially no participants
     });
     console.log(`User ${signer.address} saved to Firebase with contract address ${contractAddress}\n`);
   }
