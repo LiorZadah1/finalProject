@@ -12,10 +12,10 @@ export async function createContract(ethereum: any, contractAddress: string, con
         throw new Error("Ethereum object is not available!");
     }
 
-    console.log("Creating contract with the following parameters:");
-    console.log("Ethereum object:", ethereum);
-    console.log("Contract Address:", contractAddress);
-    console.log("Contract ABI:", contractABI);
+    // console.log("Creating contract with the following parameters:");
+    // console.log("Ethereum object:", ethereum);
+    // console.log("Contract Address:", contractAddress);
+    // console.log("Contract ABI:", contractABI);
 
     // Validate the contract address
     if (!ethers.isAddress(contractAddress)) {

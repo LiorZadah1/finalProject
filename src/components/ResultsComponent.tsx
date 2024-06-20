@@ -11,7 +11,7 @@ interface Option {
   optionName: string;
   voteCount: number;
 }
-
+// Need to understand what we need to fetch here
 const ResultsComponent: React.FC = () => {
   const [options, setOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);

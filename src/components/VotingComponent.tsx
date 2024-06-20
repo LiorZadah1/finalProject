@@ -4,6 +4,7 @@ import { db } from '../firebaseConfig'; // Import Firestore configuration
 import { doc, getDoc } from 'firebase/firestore';
 import { ethers } from 'ethers';
 import { useMetaMask } from "metamask-react";
+import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
 import {
   Container,
   Typography,
@@ -37,30 +38,25 @@ const VotingProcess: React.FC = () => {
     async function setupContract() {
       try {
         if (status === "connected" && account) {
-          const docRef = doc(db, 'contracts', account);
+          const docRef = doc(db, 'users', account);
           const docSnap = await getDoc(docRef);
       
           if (!docSnap.exists()) {
             throw new Error('No contract information available!');
           }
-      
-          const data = docSnap.data();
-          console.log("Raw data from Firestore:", data);
-      
+          const abi = VotingSystem.abi;
+          const { contractAddress, group } = docSnap.data();
+          const data = docSnap.data();      
           // Validate the structure of the data
           if (typeof data !== 'object' || !data) {
             throw new Error('Invalid contract data format!');
           }
-          console.log("here1");
-          const { abi, address } = data;
-          if (!abi || !address) {
-            throw new Error('Contract ABI or address is missing.');
+          //const { abi, contractAddress } = data;
+          if (!abi || !contractAddress) {
+            throw new Error('Contract ABI or contractAddress is missing.');
           }
-          console.log("here2");
-          const contractInstance = await createContract(window.ethereum, address, abi);
-          console.log("here3");
+          const contractInstance = await createContract(window.ethereum, contractAddress, abi);
           setContract(contractInstance);
-          console.log("here4");
           await fetchOptions(contractInstance);
         }
       }

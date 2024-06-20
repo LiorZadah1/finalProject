@@ -4,6 +4,8 @@ import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useMetaMask } from "metamask-react";
+import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
+
 import {
   Container,
   Typography,
@@ -37,19 +39,19 @@ const UserVotes: React.FC = () => {
     async function fetchData() {
       try {
         if (status === "connected" && account) {
-          const docRef = doc(db, 'contracts', account);
+          const docRef = doc(db, 'users', account);
           const docSnap = await getDoc(docRef);
 
           if (!docSnap.exists()) {
             throw new Error('No contract information available!');
           }
-
-          const { abi, address } = docSnap.data();
-          if (!abi || !address) {
+          const abi = VotingSystem.abi;
+          const { contractAddress, group } = docSnap.data();
+          if (!abi || !contractAddress) {
             throw new Error('Contract ABI or address is missing.');
           }
 
-          const contractInstance = await createContract(window.ethereum, address, abi);
+          const contractInstance = await createContract(window.ethereum, contractAddress, abi);
           await fetchUserVotes(contractInstance);
         }
       } catch (error: unknown) {

@@ -4,6 +4,7 @@ import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useMetaMask } from "metamask-react";
+import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
 import {
   Container,
   TextField,
@@ -35,14 +36,15 @@ const ElectionForm: React.FC = () => {
           if (!docSnap.exists()) {
             throw new Error('No contract information available!');
           }
-
-          const { abi, address, group } = docSnap.data();
-          if (!abi || !address || !group) {
+          // fetch abi from the existing file and contract address & group from DB
+          const abi = VotingSystem.abi;
+          const { contractAddress, group } = docSnap.data();
+          if (!abi || !contractAddress || !group) {
             throw new Error('Contract ABI or address is missing.');
           }
-
+          //console.log(abi, contractAddress, group);
           if (window.ethereum) {
-            const contractInstance = await createContract(window.ethereum, address, abi);
+            const contractInstance = await createContract(window.ethereum, contractAddress, abi);
             setContract(contractInstance);
           } else {
             throw new Error('Ethereum object is not available.');
@@ -98,10 +100,17 @@ const ElectionForm: React.FC = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
+      const daysToSeconds = (days: number) => days * 24 * 60 * 60;
+      const durationInSeconds = daysToSeconds(parseFloat(voteDuration));
+
+      if (durationInSeconds < 0) {
+        throw new Error('Duration cannot be negative.');
+      }
+
       const tx = await contract.createVote(
         voteName,
         BigInt(Date.parse(startVoteTime) / 1000),
-        BigInt(voteDuration),
+        BigInt(durationInSeconds),
         BigInt(groupId),
         voteOptions
       );
@@ -148,12 +157,13 @@ const ElectionForm: React.FC = () => {
             </Grid>
             <Grid item xs={12}>
               <TextField
-                label="Vote Duration (seconds)"
+                label="Vote Duration (days)"
                 type="number"
                 variant="outlined"
                 fullWidth
                 value={voteDuration}
                 onChange={(e) => setVoteDuration(e.target.value)}
+                inputProps={{ min: "0" }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -164,6 +174,7 @@ const ElectionForm: React.FC = () => {
                 fullWidth
                 value={groupId}
                 onChange={(e) => setGroupId(e.target.value)}
+                inputProps={{ min: "0" }}
               />
             </Grid>
             {voteOptions.map((option, index) => (

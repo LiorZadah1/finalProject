@@ -5,6 +5,7 @@ import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
 import {
   Container,
   TextField,
@@ -41,20 +42,15 @@ const VoteTable = () => {
   useEffect(() => {
     const fetchContractDetails = async () => {
       if (status === "connected" && account) {
-        try {
-          console.log("MetaMask status:", status);
-          console.log("Account:", account);
-          console.log("Ethereum object:", ethereum);
-          const docRef = doc(db, 'contracts', account);
-          console.log("Document Reference:", docRef.path);
+        try {        
+          const docRef = doc(db, 'users', account);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            const data = docSnap.data();
+            const abi = VotingSystem.abi;
+            const { contractAddress, group } = docSnap.data();
             if (ethereum) {
-              const contractInstance = await createContract(ethereum, data.address, data.abi);
+              const contractInstance = await createContract(ethereum, contractAddress, abi);
               setContract(contractInstance);
-              console.log(account);
-              console.log(account);
             }
           } else {
             throw new Error("Contract details not found!");

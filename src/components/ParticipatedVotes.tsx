@@ -4,6 +4,7 @@ import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useMetaMask } from "metamask-react";
+import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
 
 import {
   Container,
@@ -36,14 +37,14 @@ const ParticipatedVotes: React.FC = () => {
     async function fetchData() {
       try {
         if (status === "connected" && account) {
-          const docRef = doc(db, 'contracts', account);
+          const docRef = doc(db, 'users', account);
           const docSnap = await getDoc(docRef);
 
           if (!docSnap.exists()) {
             throw new Error('No contract information available!');
           }
-
-          const { abi, address } = docSnap.data();
+          const abi = VotingSystem.abi;
+          const { address, group } = docSnap.data();
           if (!abi || !address) {
             throw new Error('Contract ABI or address is missing.');
           }

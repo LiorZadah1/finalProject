@@ -18,16 +18,6 @@ const ManagementComponent: React.FC = () => {
         <Grid container spacing={4}>
           {isValidUser && !userLoading && (
             <>
-              <Grid item xs={12} md={6}>
-                <Paper elevation={3}>
-                  <Box p={2}>
-                    <Typography variant="h5" component="h2" gutterBottom>
-                      Votes Created By Me
-                    </Typography>
-                    <UserVotes />
-                  </Box>
-                </Paper>
-              </Grid>
               <Grid item xs={12}>
                 <Paper elevation={3}>
                   <Box p={2}>
@@ -35,6 +25,16 @@ const ManagementComponent: React.FC = () => {
                       Add Voter Address
                     </Typography>
                     <AddVoterAddress />
+                  </Box>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Paper elevation={3}>
+                  <Box p={2}>
+                    <Typography variant="h5" component="h2" gutterBottom>
+                      Votes Created By Me
+                    </Typography>
+                    <UserVotes />
                   </Box>
                 </Paper>
               </Grid>
