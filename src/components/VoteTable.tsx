@@ -42,8 +42,8 @@ const VoteTable = () => {
   useEffect(() => {
     const fetchContractDetails = async () => {
       if (status === "connected" && account) {
-        try {        
-          const docRef = doc(db, 'users', account);
+        try {
+          const docRef = doc(db, 'users', account.toLowerCase());
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const abi = VotingSystem.abi;
@@ -78,15 +78,16 @@ const VoteTable = () => {
         try {
           const voteData = await contract.getAccessibleVotes(account);
           const formattedVotes = voteData.map((vote: any) => ({
-            id: vote.id.toString(),
-            name: vote.name,
-            startDate: new Date(vote.startDate * 1000).toISOString(),
-            endDate: new Date(vote.endDate * 1000).toISOString(),
+            id: vote.voteID.toString(),
+            name: vote.voteName,
+            startDate: new Date(vote.startVoteTime * 1000).toISOString(),
+            endDate: new Date(vote.endVoteTime * 1000).toISOString(),
             status: vote.open,
           }));
           setVotes(formattedVotes);
         } catch (error) {
           console.error('Error fetching votes:', error);
+          setError('Error fetching votes');
         }
       }
     };
@@ -154,8 +155,8 @@ const VoteTable = () => {
                   <TableCell>{vote.endDate}</TableCell>
                   <TableCell>{vote.status ? 'Open' : 'Closed'}</TableCell>
                   <TableCell>
-                    <Button variant="contained" color="primary" onClick={() => navigate(`/vote/${vote.id}`)}>
-                      Go to Vote
+                    <Button variant="contained" color="primary" onClick={() => navigate(`/voting-component/${vote.id}`)}>
+                      Vote
                     </Button>
                   </TableCell>
                 </TableRow>

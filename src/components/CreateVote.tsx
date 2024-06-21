@@ -5,6 +5,7 @@ import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useMetaMask } from "metamask-react";
 import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
+import { getCurrentVoteId, fetchAndUpdateVoteId } from '../utils/fetchAndUpdateVoteId';
 import {
   Container,
   TextField,
@@ -15,7 +16,7 @@ import {
   Box,
 } from '@mui/material';
 
-const ElectionForm: React.FC = () => {
+const CreateVote: React.FC = () => {
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [voteName, setVoteName] = useState('');
   const [startVoteTime, setStartVoteTime] = useState('');
@@ -24,28 +25,29 @@ const ElectionForm: React.FC = () => {
   const [voteOptions, setVoteOptions] = useState(['']);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [voteId, setVoteId] = useState<number | null>(null); // State for vote ID
   const { status, account } = useMetaMask();
 
   useEffect(() => {
     async function fetchData() {
       try {
         if (status === "connected" && account) {
-          const docRef = doc(db, 'users', account);
+          const docRef = doc(db, 'users', account.toLowerCase()); // Ensure account is lowercase
           const docSnap = await getDoc(docRef);
-
+          
           if (!docSnap.exists()) {
             throw new Error('No contract information available!');
           }
-          // fetch abi from the existing file and contract address & group from DB
+
+          const { contractAddress } = docSnap.data();
           const abi = VotingSystem.abi;
-          const { contractAddress, group } = docSnap.data();
-          if (!abi || !contractAddress || !group) {
-            throw new Error('Contract ABI or address is missing.');
-          }
-          //console.log(abi, contractAddress, group);
           if (window.ethereum) {
             const contractInstance = await createContract(window.ethereum, contractAddress, abi);
             setContract(contractInstance);
+
+            // Fetch the current vote ID
+            const currentVoteId = await getCurrentVoteId();
+            setVoteId(currentVoteId);
           } else {
             throw new Error('Ethereum object is not available.');
           }
@@ -100,22 +102,19 @@ const ElectionForm: React.FC = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
-      const daysToSeconds = (days: number) => days * 24 * 60 * 60;
-      const durationInSeconds = daysToSeconds(parseFloat(voteDuration));
+      const startTime = BigInt(Date.parse(startVoteTime) / 1000);
+      const duration = BigInt(voteDuration) * 24n * 60n * 60n; // Convert days to seconds
+      const groupID = BigInt(groupId);
+      const options = voteOptions.filter(option => option.trim() !== '');
+      if (duration <= 0) throw new Error('Duration must be a positive number.');
 
-      if (durationInSeconds < 0) {
-        throw new Error('Duration cannot be negative.');
-      }
+      // Increment and fetch the next vote ID
+      const voteID = await fetchAndUpdateVoteId();
+      setVoteId(voteID);
 
-      const tx = await contract.createVote(
-        voteName,
-        BigInt(Date.parse(startVoteTime) / 1000),
-        BigInt(durationInSeconds),
-        BigInt(groupId),
-        voteOptions
-      );
+      const tx = await contract.createVote(voteID, voteName, startTime, duration, groupID, options);
       await tx.wait();
-      alert('Vote successfully created!');
+      alert(`Vote successfully created with ID: ${voteID}`);
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error('Failed to create vote:', error.message);
@@ -132,6 +131,9 @@ const ElectionForm: React.FC = () => {
       <Box mt={4}>
         <Typography variant="h4" component="h1" gutterBottom>
           Create New Vote
+        </Typography>
+        <Typography variant="h6" component="h2" gutterBottom>
+          {`Vote Identifier - ${voteId}`}
         </Typography>
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
@@ -163,7 +165,6 @@ const ElectionForm: React.FC = () => {
                 fullWidth
                 value={voteDuration}
                 onChange={(e) => setVoteDuration(e.target.value)}
-                inputProps={{ min: "0" }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -174,7 +175,6 @@ const ElectionForm: React.FC = () => {
                 fullWidth
                 value={groupId}
                 onChange={(e) => setGroupId(e.target.value)}
-                inputProps={{ min: "0" }}
               />
             </Grid>
             {voteOptions.map((option, index) => (
@@ -212,4 +212,4 @@ const ElectionForm: React.FC = () => {
   );
 };
 
-export default ElectionForm;
+export default CreateVote;

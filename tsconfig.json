@@ -9,16 +9,11 @@
     "noImplicitAny": false,
     "esModuleInterop": true,
     "moduleResolution": "node",
-
-    /* Bundler mode */
-    //"moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-
-    /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

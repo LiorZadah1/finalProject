@@ -1,69 +1,66 @@
 import { useState } from 'react';
-import { ethers, ContractFactory } from 'ethers';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useMetaMask } from "metamask-react";
-import { db } from './firebaseConfig'; // Your Firebase configuration
-import { doc, setDoc } from 'firebase/firestore';
 import VoteTable from './components/VoteTable';
 import HomePage from './components/HomePage';
 import CreateVote from './components/CreateVote';
 import VoteResults from './components/ResultsComponent';
 import VotingComponent from './components/VotingComponent';
 import UserManagement from './components/ManagementComponent';
-import contractArtifact from '../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json';
 import { AppBar, Toolbar, Typography, Button, CircularProgress, Container, Box } from '@mui/material';
 import useCheckUser from './utils/checkUser';
 
 const App = () => {
-  const { status, connect, account, ethereum } = useMetaMask();
-  const [loading, setLoading] = useState(false);
+  const { status, connect, account } = useMetaMask();
+  const [loading] = useState(false);
   const [isValidUser, userLoading] = useCheckUser();
 
-  const deployAndConnect = async () => {
-    try {
-      setLoading(true);
-      await connect();
+  // // still needed??
+  // const deployAndConnect = async () => {
+  //   try {
+  //     setLoading(true);
+  //     await connect();
 
-      if (ethereum.isConnected() && window.ethereum !== "undefined") {
-        const provider = new ethers.BrowserProvider(ethereum);
-        const signer = await provider.getSigner();
+  //     if (ethereum.isConnected() && window.ethereum !== "undefined") {
+  //       const provider = new ethers.BrowserProvider(ethereum);
+  //       const signer = await provider.getSigner();
 
-        const abi = contractArtifact.abi;
-        const bytecode = contractArtifact.bytecode;
+  //       const abi = contractArtifact.abi;
+  //       const bytecode = contractArtifact.bytecode;
 
-        const factory = new ContractFactory(abi, bytecode, signer);
-        const contract = await factory.deploy();
+  //       const factory = new ContractFactory(abi, bytecode, signer);
+  //       const contract = await factory.deploy();
 
-        const contractData = {
-          address: contract.target, // Correctly store the deployed contract address
-          abi: JSON.stringify(abi)
-        };
+  //       const contractData = {
+  //         address: contract.target, // Correctly store the deployed contract address
+  //         abi: JSON.stringify(abi)
+  //       };
 
-        if (typeof account === 'string') {
-          const docRef = doc(db, "contracts", account);
-          await setDoc(docRef, contractData);
-          console.log('Contract deployed and data saved:', contractData);
-        } else {
-          console.error('Contract address is not a string:', contract.target);
-        }
+  //       if (typeof account === 'string') {
+  //         const docRef = doc(db, "contracts", account);
+  //         await setDoc(docRef, contractData);
+  //         console.log('Contract deployed and data saved:', contractData);
+  //       } else {
+  //         console.error('Contract address is not a string:', contract.target);
+  //       }
 
-        console.log('Contract deployed and data saved:', contractData);
-      } else {
-        throw new Error("Failed to connect to MetaMask");
-      }
-    } catch (error) {
-      console.error('Failed to connect and deploy contract:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //       console.log('Contract deployed and data saved:', contractData);
+  //     } else {
+  //       throw new Error("Failed to connect to MetaMask");
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to connect and deploy contract:', error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   if (status === "initializing") return <div>Synchronisation with MetaMask ongoing...</div>;
   if (status === "unavailable") return <div>MetaMask not available</div>;
   if (status === "notConnected") return (
     <Container maxWidth="sm" style={{ marginTop: '2rem' }}>
       <Button
-        onClick={deployAndConnect}
+        onClick={connect}
         variant="contained"
         color="primary"
         fullWidth
@@ -110,7 +107,7 @@ const App = () => {
             {isValidUser && !userLoading && (
               <Button color="inherit" href="/create-vote">Create New Vote</Button>
             )}
-            <Button color="inherit" href="/voting-component">Voting</Button>
+            {/* <Button color="inherit" href="/voting-component">Voting</Button> */}
             <Button color="inherit" href="/vote-results">Vote Results</Button>
             <Button color="inherit" href="/user-management">User Management</Button>
           </Toolbar>
@@ -122,7 +119,7 @@ const App = () => {
             } } />} />
             <Route path="/vote-table" element={<VoteTable />} />
             <Route path="/create-vote" element={<CreateVote />} />
-            <Route path="/voting-component" element={<VotingComponent />} />
+            <Route path="/voting-component/:voteID" element={<VotingComponent />} />
             <Route path="/vote-results" element={<VoteResults />} />
             <Route path="/user-management" element={<UserManagement />} />
           </Routes>

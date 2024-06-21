@@ -2,39 +2,61 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useMetaMask } from "metamask-react";
-import { Container,Typography,Table,TableBody,TableCell,TableContainer,TableHead,
-          TableRow,Paper,CircularProgress } from '@mui/material';
+import {
+  Container,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  CircularProgress
+} from '@mui/material';
+import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
 
 interface Option {
   optionName: string;
   voteCount: number;
 }
-// Need to understand what we need to fetch here
+
+interface Vote {
+  id: number;
+  options: Option[];
+}
+
 const ResultsComponent: React.FC = () => {
-  const [options, setOptions] = useState<Option[]>([]);
+  const [votes, setVotes] = useState<Vote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { status, account } = useMetaMask();  
+  const { status, account } = useMetaMask();
+  const [contract, setContract] = useState<ethers.Contract | null>(null);
+
   useEffect(() => {
     async function fetchData() {
       try {
-        if (status === "connected") {
-          const docRef = doc(db, 'contracts', account);
+        if (status === "connected" && account) {
+          const docRef = doc(db, 'users', account.toLowerCase());
           const docSnap = await getDoc(docRef);
 
           if (!docSnap.exists()) {
             throw new Error('No contract information available!');
           }
 
-          const { abi, address } = docSnap.data();
-          if (!abi || !address) {
-            throw new Error('Contract ABI or address is missing.');
-          }
+          const { contractAddress } = docSnap.data();
+          const abi = VotingSystem.abi;
+          if (window.ethereum) {
+            const contractInstance = await createContract(window.ethereum, contractAddress, abi);
+            setContract(contractInstance);
 
-          const contractInstance = await createContract(window.ethereum, address, abi);
-          await fetchResults(contractInstance);
+            // Fetch the results after setting the contract
+            await fetchResults(contractInstance);
+          } else {
+            throw new Error('Ethereum object is not available.');
+          }
         }
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -50,26 +72,50 @@ const ResultsComponent: React.FC = () => {
     }
 
     async function fetchResults(contract: ethers.Contract) {
-      const voteID = 1; // Example vote ID, this should be dynamically determined based on the context
-      const optionsCount = await contract.getOptionsCount(voteID);
-      const voteCounts: number[] = await contract.getVoteResults(voteID, optionsCount);
+      try {
+        const votesRef = collection(db, 'votesID');
+        const latestVoteIdDoc = await getDoc(doc(db, 'config', 'voteId'));
+        const latestVoteId = latestVoteIdDoc.exists() ? latestVoteIdDoc.data().value : 0;
 
-      // Use Array.from and Promise.all to fetch options in parallel
-      const optionsArray: Option[] = await Promise.all(
-        Array.from({ length: optionsCount }).map(async (_, i) => {
-          const optionDetails = await contract.getOptionDetails(voteID, i);
-          return {
-            optionName: optionDetails.optionName,
-            voteCount: voteCounts[i],
-          };
-        })
-      );
+        const q = query(votesRef, where('id', '<=', latestVoteId));
+        const querySnapshot = await getDocs(q);
 
-      setOptions(optionsArray);
+        const voteDocs = querySnapshot.docs.map(doc => doc.data()).filter(vote => vote.status === 'closed');
+
+        const votesArray: Vote[] = [];
+
+        for (const vote of voteDocs) {
+          const voteID = vote.id;
+          const optionsCount = await contract.getOptionsCount(voteID);
+          const voteCounts: number[] = await contract.getVoteResults(voteID, optionsCount);
+
+          const optionsArray: Option[] = await Promise.all(
+            Array.from({ length: optionsCount }).map(async (_, i) => {
+              const optionDetails = await contract.getOptionDetails(voteID, i);
+              return {
+                optionName: optionDetails.optionName,
+                voteCount: voteCounts[i],
+              };
+            })
+          );
+
+          votesArray.push({ id: voteID, options: optionsArray });
+        }
+
+        setVotes(votesArray);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error('Error fetching vote results:', error.message);
+          setError(error.message);
+        } else {
+          console.error('An unexpected error occurred');
+          setError('An unexpected error occurred');
+        }
+      }
     }
 
     fetchData();
-  }, []);
+  }, [status, account]);
 
   if (loading) {
     return (
@@ -97,17 +143,32 @@ const ResultsComponent: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell>Vote ID</TableCell>
               <TableCell>Option Name</TableCell>
               <TableCell>Vote Count</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {options.map((option, index) => (
-              <TableRow key={index}>
-                <TableCell>{option.optionName}</TableCell>
-                <TableCell>{option.voteCount}</TableCell>
-              </TableRow>
-            ))}
+            {votes.map((vote, index) => {
+              const maxVoteCount = Math.max(...vote.options.map(option => option.voteCount));
+              return (
+                <React.Fragment key={index}>
+                  <TableRow>
+                    <TableCell rowSpan={vote.options.length + 1}>{vote.id}</TableCell>
+                  </TableRow>
+                  {vote.options.map((option, i) => (
+                    <TableRow key={i}>
+                      <TableCell style={option.voteCount === maxVoteCount ? { fontWeight: 'bold' } : {}}>
+                        {option.optionName}
+                      </TableCell>
+                      <TableCell style={option.voteCount === maxVoteCount ? { fontWeight: 'bold' } : {}}>
+                        {option.voteCount}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </React.Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>

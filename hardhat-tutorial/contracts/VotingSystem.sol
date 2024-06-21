@@ -28,9 +28,10 @@ contract VotingSystem {
         uint startVoteTime; //contains the date when the contract is created
         uint endVoteTime; //contains the date when the contract expires
         mapping(uint => Option) options; //mapping of the vote options -> optionID => Option
-        mapping(address => Voter) voters; // add here to ones that can vote
+        mapping(address => Voter) voters; // add here to ones that can vote ?
         uint groupId; // Add this to associate the vote with a specific group
         uint optionsCount;
+        bool open;
     }
 
     modifier onlyAdmin{ //Calling specific functions for the admin
@@ -113,6 +114,26 @@ contract VotingSystem {
             Option storage option = votes[voteID].options[optionIndex];
             return (option.optionName, option.countOption);
     }
+    // to make this work by groups we need to add here db conf and to search which group this user is belonged to.
+      function getAccessibleVotes(address voter) public {
+    //     uint256 count = 0;
+    //     for (uint256 i = 1; i < nextVoteID; i++) {
+    //         if (votes[i].groupId == 1 /* Check if the voter belongs to this group */) {
+    //             count++;
+    //         }
+    //     }
+
+    //     Vote[] memory accessibleVotes = new Vote[](count);
+    //     uint256 index = 0;
+    //     for (uint256 i = 1; i < nextVoteID; i++) {
+    //         if (votes[i].groupId == 1 /* Check if the voter belongs to this group */) {
+    //             accessibleVotes[index] = votes[i];
+    //             index++;
+    //         }
+    //     }
+    //     return accessibleVotes;
+     }
+
 
     // function getVotesByUserGroup(address user) external view returns (Vote[] memory) {
     //     uint256 groupId = userGroup[user];
