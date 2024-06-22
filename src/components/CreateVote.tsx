@@ -114,6 +114,7 @@ const CreateVote: React.FC = () => {
 
       const tx = await contract.createVote(voteID, voteName, startTime, duration, groupID, options);
       await tx.wait();
+      console.log(tx);
       alert(`Vote successfully created with ID: ${voteID}`);
     } catch (error: unknown) {
       if (error instanceof Error) {

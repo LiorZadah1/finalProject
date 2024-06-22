@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useMetaMask } from "metamask-react";
 import { ethers } from 'ethers';
 import { createContract } from '../utils/createContract';
+import { getGroupIdForUser } from '../utils/getGroupIdForUser';
 import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -47,10 +48,12 @@ const VoteTable = () => {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const abi = VotingSystem.abi;
-            const { contractAddress, group } = docSnap.data();
+            const { contractAddress } = docSnap.data();
             if (ethereum) {
               const contractInstance = await createContract(ethereum, contractAddress, abi);
               setContract(contractInstance);
+              // Fetch votes after setting up the contract
+              fetchVotes(contractInstance);
             }
           } else {
             throw new Error("Contract details not found!");
@@ -72,29 +75,52 @@ const VoteTable = () => {
     fetchContractDetails();
   }, [status, account, ethereum]);
 
-  useEffect(() => {
-    const fetchVotes = async () => {
-      if (contract && account) {
-        try {
-          const voteData = await contract.getAccessibleVotes(account);
-          const formattedVotes = voteData.map((vote: any) => ({
-            id: vote.voteID.toString(),
-            name: vote.voteName,
-            startDate: new Date(vote.startVoteTime * 1000).toISOString(),
-            endDate: new Date(vote.endVoteTime * 1000).toISOString(),
-            status: vote.open,
-          }));
+  const fetchVotes = async (contractInstance: ethers.Contract) => {
+    if (contractInstance && account) {
+      try {
+        const groupId = await getGroupIdForUser(account.toLowerCase());
+        if (groupId !== null) {
+          console.log('Group ID:', groupId);
+          const result = await contractInstance.getAccessibleVotes(groupId);
+  
+          if (!result || !Array.isArray(result[0])) {
+            console.error('Unexpected result format:', result);
+            setError('Unexpected result format from contract');
+            return;
+          }
+  
+          const [voteIDs, voteNames, startVoteTimes, endVoteTimes, openStatuses] = result;
+  
+          console.log('Result from contract:', result);
+  
+          const formattedVotes = voteIDs.map((voteID: BigInt, index: number) => {
+            const startDate = new Date(Number(startVoteTimes[index]) * 1000);
+            const endDate = new Date(Number(endVoteTimes[index]) * 1000);
+            console.log('vote:', voteID); // Log each vote
+            console.log('startDate:', startDate);
+            console.log('endDate:', endDate);
+  
+            return {
+              id: voteID.toString(),
+              name: voteNames[index],
+              startDate: isNaN(startDate.getTime()) ? 'Invalid Date' : startDate.toISOString(),
+              endDate: isNaN(endDate.getTime()) ? 'Invalid Date' : endDate.toISOString(),
+              status: openStatuses[index],
+            };
+          });
           setVotes(formattedVotes);
-        } catch (error) {
-          console.error('Error fetching votes:', error);
-          setError('Error fetching votes');
+        } else {
+          setError('Group ID not found for the user.');
         }
+      } catch (error) {
+        console.error('Error fetching votes:', error);
+        setError('Error fetching votes');
       }
-    };
-
-    fetchVotes();
-  }, [contract, account]);
-
+    }
+  };
+  
+  
+  
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
@@ -155,7 +181,7 @@ const VoteTable = () => {
                   <TableCell>{vote.endDate}</TableCell>
                   <TableCell>{vote.status ? 'Open' : 'Closed'}</TableCell>
                   <TableCell>
-                    <Button variant="contained" color="primary" onClick={() => navigate(`/voting-component/${vote.id}`)}>
+                    <Button variant="contained" color="primary" onClick={() => navigate(`/vote/${vote.id}`)}>
                       Vote
                     </Button>
                   </TableCell>

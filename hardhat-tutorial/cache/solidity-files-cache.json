@@ -76,8 +76,8 @@
       ]
     },
     "C:\\finalProject\\frontEnd\\voting-system\\hardhat-tutorial\\contracts\\VotingSystem.sol": {
-      "lastModificationDate": 1716701687179,
-      "contentHash": "36103aac87d8fbfdc3dabea4d0df6389",
+      "lastModificationDate": 1719073773591,
+      "contentHash": "57e07f115224b961a3deaeb2d6e9aec7",
       "sourceName": "contracts/VotingSystem.sol",
       "solcConfig": {
         "version": "0.8.24",
