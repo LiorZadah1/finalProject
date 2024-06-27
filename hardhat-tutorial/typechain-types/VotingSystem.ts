@@ -24,21 +24,29 @@ import type {
 export interface VotingSystemInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "addOption"
       | "addVoter"
+      | "admin"
       | "castVote"
       | "createVote"
       | "getAccessibleVotes"
       | "getOptionDetails"
       | "getOptionsCount"
+      | "getVote"
       | "getVoteResults"
       | "nextVoteID"
       | "votes"
   ): FunctionFragment;
 
   encodeFunctionData(
+    functionFragment: "addOption",
+    values: [BigNumberish, string]
+  ): string;
+  encodeFunctionData(
     functionFragment: "addVoter",
     values: [BigNumberish, AddressLike, BigNumberish]
   ): string;
+  encodeFunctionData(functionFragment: "admin", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "castVote",
     values: [BigNumberish, BigNumberish]
@@ -67,6 +75,10 @@ export interface VotingSystemInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "getVote",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getVoteResults",
     values: [BigNumberish, BigNumberish]
   ): string;
@@ -76,7 +88,9 @@ export interface VotingSystemInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "votes", values: [BigNumberish]): string;
 
+  decodeFunctionResult(functionFragment: "addOption", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "addVoter", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "admin", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "castVote", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "createVote", data: BytesLike): Result;
   decodeFunctionResult(
@@ -91,6 +105,7 @@ export interface VotingSystemInterface extends Interface {
     functionFragment: "getOptionsCount",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "getVote", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getVoteResults",
     data: BytesLike
@@ -142,11 +157,19 @@ export interface VotingSystem extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  addOption: TypedContractMethod<
+    [voteID: BigNumberish, optionName: string],
+    [void],
+    "nonpayable"
+  >;
+
   addVoter: TypedContractMethod<
     [voteID: BigNumberish, voterAddress: AddressLike, groupId: BigNumberish],
     [void],
     "nonpayable"
   >;
+
+  admin: TypedContractMethod<[], [string], "view">;
 
   castVote: TypedContractMethod<
     [voteID: BigNumberish, optionIndex: BigNumberish],
@@ -174,11 +197,11 @@ export interface VotingSystem extends BaseContract {
         voteIDs: bigint[];
         voteNames: string[];
         startVoteTimes: bigint[];
-        endVoteTimes: bigint[];
+        durations: bigint[];
         openStatuses: boolean[];
       }
     ],
-    "nonpayable"
+    "view"
   >;
 
   getOptionDetails: TypedContractMethod<
@@ -193,6 +216,20 @@ export interface VotingSystem extends BaseContract {
     "view"
   >;
 
+  getVote: TypedContractMethod<
+    [voteID: BigNumberish],
+    [
+      [string, bigint, bigint, boolean, bigint] & {
+        voteName: string;
+        startVoteTime: bigint;
+        duration: bigint;
+        open: boolean;
+        optionsCount: bigint;
+      }
+    ],
+    "view"
+  >;
+
   getVoteResults: TypedContractMethod<
     [voteID: BigNumberish, optionsCount: BigNumberish],
     [bigint[]],
@@ -204,14 +241,15 @@ export interface VotingSystem extends BaseContract {
   votes: TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, bigint, bigint, bigint, bigint, bigint, boolean] & {
+      [string, bigint, bigint, bigint, bigint, bigint, boolean, bigint] & {
         voteName: string;
         voteID: bigint;
         startVoteTime: bigint;
-        endVoteTime: bigint;
+        duration: bigint;
         groupId: bigint;
         optionsCount: bigint;
         open: boolean;
+        lastVoterIndex: bigint;
       }
     ],
     "view"
@@ -222,12 +260,22 @@ export interface VotingSystem extends BaseContract {
   ): T;
 
   getFunction(
+    nameOrSignature: "addOption"
+  ): TypedContractMethod<
+    [voteID: BigNumberish, optionName: string],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "addVoter"
   ): TypedContractMethod<
     [voteID: BigNumberish, voterAddress: AddressLike, groupId: BigNumberish],
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "admin"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "castVote"
   ): TypedContractMethod<
@@ -258,11 +306,11 @@ export interface VotingSystem extends BaseContract {
         voteIDs: bigint[];
         voteNames: string[];
         startVoteTimes: bigint[];
-        endVoteTimes: bigint[];
+        durations: bigint[];
         openStatuses: boolean[];
       }
     ],
-    "nonpayable"
+    "view"
   >;
   getFunction(
     nameOrSignature: "getOptionDetails"
@@ -274,6 +322,21 @@ export interface VotingSystem extends BaseContract {
   getFunction(
     nameOrSignature: "getOptionsCount"
   ): TypedContractMethod<[voteID: BigNumberish], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "getVote"
+  ): TypedContractMethod<
+    [voteID: BigNumberish],
+    [
+      [string, bigint, bigint, boolean, bigint] & {
+        voteName: string;
+        startVoteTime: bigint;
+        duration: bigint;
+        open: boolean;
+        optionsCount: bigint;
+      }
+    ],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "getVoteResults"
   ): TypedContractMethod<
@@ -289,14 +352,15 @@ export interface VotingSystem extends BaseContract {
   ): TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, bigint, bigint, bigint, bigint, bigint, boolean] & {
+      [string, bigint, bigint, bigint, bigint, bigint, boolean, bigint] & {
         voteName: string;
         voteID: bigint;
         startVoteTime: bigint;
-        endVoteTime: bigint;
+        duration: bigint;
         groupId: bigint;
         optionsCount: bigint;
         open: boolean;
+        lastVoterIndex: bigint;
       }
     ],
     "view"
