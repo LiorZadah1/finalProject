@@ -99,14 +99,24 @@ const CreateVote: React.FC = () => {
     }
   };
 
+  const resetForm = () => {
+    setVoteName('');
+    setStartVoteTime('');
+    setVoteDuration('');
+    setGroupId('');
+    setVoteOptions(['']);
+    setVoteId(null);
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
+      alert("Please check your MetaMask extention :)")
       const startTime = BigInt(Date.parse(startVoteTime) / 1000);
       const duration = BigInt(voteDuration) * 24n * 60n * 60n; // Convert days to seconds
       const groupID = BigInt(groupId);
       const options = voteOptions.filter(option => option.trim() !== '');
-      if (duration <= 0) throw new Error('Duration must be a positive number.');
+      if (duration <= 0 || groupID <= 0 ) throw new Error('Duration and group ID must be a positive number.');
 
       // Increment and fetch the next vote ID
       const voteID = await fetchAndUpdateVoteId();
@@ -116,6 +126,7 @@ const CreateVote: React.FC = () => {
       await tx.wait();
       console.log(tx);
       alert(`Vote successfully created with ID: ${voteID}`);
+      resetForm();
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error('Failed to create vote:', error.message);

@@ -14,6 +14,10 @@ const AddVoteAddress: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isValidUser, userLoading] = useCheckUser();
 
+  const resetForm = () => {
+    setGroupId('');
+    setVoterAddress('');
+  };
   const handleAddVoter = async () => {
     if (!groupId || !voterAddress) {
       setError('Group ID and Voter Address are required');
@@ -25,6 +29,7 @@ const AddVoteAddress: React.FC = () => {
         [`group.${groupId}`]: arrayUnion(voterAddress)
       });
       setMessage('Voter address added successfully');
+      resetForm();
       setError(null);
     } catch (error: unknown) {
       if (error instanceof Error) {

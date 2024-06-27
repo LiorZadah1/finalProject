@@ -4,7 +4,14 @@
   padding: 2rem;
   text-align: center;
 }
-
+.app-container {
+  background-image: url('../public/background.png');
+  background-size: cover;
+  background-position: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 .logo {
   height: 6em;
   padding: 1.5em;

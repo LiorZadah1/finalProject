@@ -31,7 +31,7 @@ const ParticipatedVotes: React.FC = () => {
   const [votes, setVotes] = useState<Vote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { status, account } = useMetaMask();  
+  const { status, account } = useMetaMask();
 
   useEffect(() => {
     async function fetchData() {
@@ -44,12 +44,12 @@ const ParticipatedVotes: React.FC = () => {
             throw new Error('No contract information available!');
           }
           const abi = VotingSystem.abi;
-          const { address, group } = docSnap.data();
-          if (!abi || !address) {
+          const { contractAddress } = docSnap.data();
+          if (!abi || !contractAddress) {
             throw new Error('Contract ABI or address is missing.');
           }
 
-          const contractInstance = await createContract(window.ethereum, address, abi);
+          const contractInstance = await createContract(window.ethereum, contractAddress, abi);
           await fetchParticipatedVotes(contractInstance);
         }
       } catch (error: unknown) {
@@ -66,18 +66,23 @@ const ParticipatedVotes: React.FC = () => {
     }
 
     async function fetchParticipatedVotes(contract: ethers.Contract) {
-      //took the long way so we could use userAddress using Signer
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
-      const participatedVotes = await contract.getParticipatedVotes(userAddress);
-      const formattedVotes = participatedVotes.map((vote: any) => ({
-        id: vote.id.toString(),
-        name: vote.name,
-        startDate: new Date(vote.startDate * 1000).toISOString(),
-        endDate: new Date(vote.endDate * 1000).toISOString(),
-      }));
-      setVotes(formattedVotes);
+      const participatedVoteIDs = await contract.getParticipatedVotes(userAddress);
+
+      const participatedVotes = await Promise.all(
+        participatedVoteIDs.map(async (voteID: ethers.BigNumberish) => {
+          const voteData = await contract.votes(voteID);
+          return {
+            id: voteID.toString(),
+            name: voteData.voteName,
+            startDate: new Date(Number(voteData.startVoteTime) * 1000).toISOString(),
+            endDate: new Date((Number(voteData.startVoteTime) + Number(voteData.duration)) * 1000).toISOString(),
+          };
+        })
+      );
+      setVotes(participatedVotes);
     }
 
     fetchData();

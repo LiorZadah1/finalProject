@@ -18,9 +18,7 @@ import {
   Paper,
   CircularProgress,
   Box,
-  Fab
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 
 interface Vote {
   id: string;
@@ -46,7 +44,7 @@ const UserVotes: React.FC = () => {
             throw new Error('No contract information available!');
           }
           const abi = VotingSystem.abi;
-          const { contractAddress, group } = docSnap.data();
+          const { contractAddress } = docSnap.data();
           if (!abi || !contractAddress) {
             throw new Error('Contract ABI or address is missing.');
           }
@@ -68,19 +66,23 @@ const UserVotes: React.FC = () => {
     }
 
     async function fetchUserVotes(contract: ethers.Contract) {
-      // const userAddress = await contract.getAddress;
-      //Switch to working in the longer way because we didnt found getAddress();
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const userAddress = await signer.getAddress()
-      const userVotes = await contract.getUserVotes(userAddress);
-      const formattedVotes = userVotes.map((vote: any) => ({
-        id: vote.id.toString(),
-        name: vote.name,
-        startDate: new Date(vote.startDate * 1000).toISOString(),
-        endDate: new Date(vote.endDate * 1000).toISOString(),
-      }));
-      setVotes(formattedVotes);
+      const userAddress = await signer.getAddress();
+      const userVoteIDs = await contract.getUserVotes(userAddress);
+      
+      const userVotes = await Promise.all(
+        userVoteIDs.map(async (voteID: ethers.BigNumberish) => {
+          const voteData = await contract.votes(voteID);
+          return {
+            id: voteID.toString(),
+            name: voteData.voteName,
+            startDate: new Date(Number(voteData.startVoteTime) * 1000).toISOString(),
+            endDate: new Date((Number(voteData.startVoteTime) + Number(voteData.duration)) * 1000).toISOString(),
+          };
+        })
+      );
+      setVotes(userVotes);
     }
 
     fetchData();
@@ -91,7 +93,7 @@ const UserVotes: React.FC = () => {
       <Container>
         <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
           <CircularProgress />
-          <Typography>Loading user votes...</Typography>
+          <Typography>Loading votes created by you...</Typography>
         </Box>
       </Container>
     );
@@ -108,10 +110,10 @@ const UserVotes: React.FC = () => {
   return (
     <Container>
       <Typography variant="h4" component="h1" gutterBottom>
-        My Created Votes
+        Votes Created By Me
       </Typography>
       {votes.length > 0 ? (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} style={{ marginTop: '20px' }}>
           <Table>
             <TableHead>
               <TableRow>
@@ -133,12 +135,9 @@ const UserVotes: React.FC = () => {
         </TableContainer>
       ) : (
         <Typography variant="body1" component="p">
-          No votes created yet.
+          No votes created by you yet.
         </Typography>
       )}
-      <Fab color="primary" aria-label="add" style={{ position: 'fixed', bottom: 16, right: 16 }}>
-        <AddIcon />
-      </Fab>
     </Container>
   );
 };

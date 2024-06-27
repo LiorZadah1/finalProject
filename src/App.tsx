@@ -15,50 +15,19 @@ const App = () => {
   const [loading] = useState(false);
   const [isValidUser, userLoading] = useCheckUser();
 
-  // // still needed??
-  // const deployAndConnect = async () => {
-  //   try {
-  //     setLoading(true);
-  //     await connect();
-
-  //     if (ethereum.isConnected() && window.ethereum !== "undefined") {
-  //       const provider = new ethers.BrowserProvider(ethereum);
-  //       const signer = await provider.getSigner();
-
-  //       const abi = contractArtifact.abi;
-  //       const bytecode = contractArtifact.bytecode;
-
-  //       const factory = new ContractFactory(abi, bytecode, signer);
-  //       const contract = await factory.deploy();
-
-  //       const contractData = {
-  //         address: contract.target, // Correctly store the deployed contract address
-  //         abi: JSON.stringify(abi)
-  //       };
-
-  //       if (typeof account === 'string') {
-  //         const docRef = doc(db, "contracts", account);
-  //         await setDoc(docRef, contractData);
-  //         console.log('Contract deployed and data saved:', contractData);
-  //       } else {
-  //         console.error('Contract address is not a string:', contract.target);
-  //       }
-
-  //       console.log('Contract deployed and data saved:', contractData);
-  //     } else {
-  //       throw new Error("Failed to connect to MetaMask");
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to connect and deploy contract:', error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   if (status === "initializing") return <div>Synchronisation with MetaMask ongoing...</div>;
   if (status === "unavailable") return <div>MetaMask not available</div>;
   if (status === "notConnected") return (
     <Container maxWidth="sm" style={{ marginTop: '2rem' }}>
+      <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                Voting System
+      </Typography>
+      <Typography variant="h3" component="h1" gutterBottom>
+          Welcome to the Voting System
+        </Typography>
+        <Typography variant="h5" component="h2" gutterBottom>
+          Secure, Transparent, and Decentralized Voting
+        </Typography>
       <Button
         onClick={connect}
         variant="contained"
@@ -79,6 +48,15 @@ const App = () => {
   );
   if (status === "connecting") return (
     <Container maxWidth="sm" style={{ marginTop: '2rem' }}>
+      <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                Voting System
+      </Typography>
+      <Typography variant="h3" component="h1" gutterBottom>
+          Welcome to the Voting System
+        </Typography>
+        <Typography variant="h5" component="h2" gutterBottom>
+          Secure, Transparent, and Decentralized Voting
+        </Typography>
       <Box textAlign="center" style={{
         padding: '1rem',
         fontSize: '1.5rem',
@@ -98,18 +76,18 @@ const App = () => {
       <Router>
         <AppBar position="static">
           <Toolbar>
-            <Button color="inherit" href="/" style={{ textTransform: 'none' }}>
-              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                Voting System
-              </Typography>
-            </Button>
-            <Button color="inherit" href="/vote-table">Votes Table</Button>
-            {isValidUser && !userLoading && (
-              <Button color="inherit" href="/create-vote">Create New Vote</Button>
-            )}
-            {/* <Button color="inherit" href="/voting-component">Voting</Button> */}
-            <Button color="inherit" href="/vote-results">Vote Results</Button>
-            <Button color="inherit" href="/user-management">User Management</Button>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              Voting System
+            </Typography>
+            <Box sx={{ flexGrow: 1 }} />
+            <Box>
+              <Button color="inherit" href="/vote-table">Votes Table</Button>
+              {isValidUser && !userLoading && (
+                <Button color="inherit" href="/create-vote">Create New Vote</Button>
+              )}
+              <Button color="inherit" href="/vote-results">Vote Results</Button>
+              <Button color="inherit" href="/user-management">User Management</Button>
+            </Box>
           </Toolbar>
         </AppBar>
         <Container>
@@ -120,6 +98,7 @@ const App = () => {
             <Route path="/vote-table" element={<VoteTable />} />
             <Route path="/create-vote" element={<CreateVote />} />
             <Route path="/voting-component/:voteID" element={<VotingComponent />} />
+            <Route path="/voting-component" element={<VotingComponent />} />
             <Route path="/vote-results" element={<VoteResults />} />
             <Route path="/user-management" element={<UserManagement />} />
           </Routes>

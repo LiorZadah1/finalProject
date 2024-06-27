@@ -32,7 +32,7 @@ const VotingComponent: React.FC = () => {
   const { status, account } = useMetaMask();
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [vote, setVote] = useState<Vote | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string>('');
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,22 +74,36 @@ const VotingComponent: React.FC = () => {
     const fetchVote = async () => {
       if (contract && voteID) {
         try {
-          const voteData = await contract.votes(voteID);
-          const options: string[] = [];
-          for (let i = 0; i < voteData.optionsCount; i++) {
-            const option = await contract.getOption(voteID, i);
-            options.push(option.name);
+          console.log(`Raw voteID: ${voteID}`);
+          
+          let cleanedVoteID = voteID;
+          if (voteID.startsWith(':')) {
+            cleanedVoteID = voteID.substring(1);
           }
+
+          const voteIdBigInt = BigInt(cleanedVoteID); // Convert voteID to BigInt
+          console.log(`Converted voteID to BigInt: ${voteIdBigInt}`);
+          const voteData = await contract.getVote(voteIdBigInt);
+          console.log('Vote data:', voteData);
+
+          const options: string[] = [];
+          for (let i = 0; i < voteData[4]; i++) { // voteData[4] should be optionsCount
+            const option = await contract.getOptionDetails(voteIdBigInt, i);
+            console.log(`Option ${i} details:`, option);
+            options.push(option[0]); // option[0] should be optionName
+          }
+
           setVote({
-            id: voteID,
-            name: voteData.voteName,
+            id: cleanedVoteID,
+            name: voteData[0], // voteName
             options: options,
-            startDate: new Date(voteData.startVoteTime * 1000).toISOString(),
-            endDate: new Date(voteData.endVoteTime * 1000).toISOString(),
-            status: voteData.open,
+            startDate: new Date(Number(voteData[1]) * 1000).toISOString(), // startVoteTime
+            endDate: new Date((Number(voteData[1]) + Number(voteData[2])) * 1000).toISOString(), // startVoteTime + duration
+            status: voteData[3], // open
           });
         } catch (error) {
           console.error('Error fetching vote:', error);
+          setError('Failed to fetch vote details.');
         }
       }
     };
@@ -103,13 +117,23 @@ const VotingComponent: React.FC = () => {
       return;
     }
 
-    if (!selectedOption) {
+    if (selectedOptionIndex === null) {
       setError('Please select an option.');
       return;
     }
 
     try {
-      const tx = await contract.castVote(voteID, selectedOption);
+      if (!voteID) {
+        throw new Error('Vote ID is not defined.');
+      }
+      let cleanedVoteID = voteID;
+      if (voteID.startsWith(':')) {
+        cleanedVoteID = voteID.substring(1);
+      }
+      const voteIdBigInt = BigInt(cleanedVoteID); // Convert voteID to BigInt
+
+      console.log(`Casting vote for voteID: ${voteIdBigInt} with option index: ${selectedOptionIndex}`);
+      const tx = await contract.castVote(voteIdBigInt, BigInt(selectedOptionIndex));
       await tx.wait();
       alert('Vote successfully cast!');
     } catch (error: unknown) {
@@ -157,11 +181,11 @@ const VotingComponent: React.FC = () => {
               <InputLabel id="select-option-label">Select Option</InputLabel>
               <Select
                 labelId="select-option-label"
-                value={selectedOption}
-                onChange={(e) => setSelectedOption(e.target.value as string)}
+                value={selectedOptionIndex !== null ? selectedOptionIndex.toString() : ''}
+                onChange={(e) => setSelectedOptionIndex(Number(e.target.value))}
               >
                 {vote.options.map((option, index) => (
-                  <MenuItem key={index} value={option}>
+                  <MenuItem key={index} value={index}>
                     {option}
                   </MenuItem>
                 ))}
@@ -177,7 +201,7 @@ const VotingComponent: React.FC = () => {
               color="primary"
               fullWidth
               onClick={handleVote}
-              disabled={!selectedOption}
+              disabled={selectedOptionIndex === null}
             >
               Submit Vote
             </Button>

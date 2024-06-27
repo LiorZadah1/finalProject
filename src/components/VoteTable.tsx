@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useMetaMask } from "metamask-react";
 import { ethers } from 'ethers';
 import { createContract } from '../utils/createContract';
-import { getGroupIdForUser } from '../utils/getGroupIdForUser';
 import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +21,7 @@ import {
   CircularProgress,
   Box
 } from '@mui/material';
+import { getGroupIdForUser } from '../utils/getGroupIdForUser';
 
 interface Vote {
   id: string;
@@ -43,7 +43,7 @@ const VoteTable = () => {
   useEffect(() => {
     const fetchContractDetails = async () => {
       if (status === "connected" && account) {
-        try {
+        try {        
           const docRef = doc(db, 'users', account.toLowerCase());
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
@@ -52,8 +52,7 @@ const VoteTable = () => {
             if (ethereum) {
               const contractInstance = await createContract(ethereum, contractAddress, abi);
               setContract(contractInstance);
-              // Fetch votes after setting up the contract
-              fetchVotes(contractInstance);
+              console.log("Contract instance created successfully:", contractInstance);
             }
           } else {
             throw new Error("Contract details not found!");
@@ -75,52 +74,55 @@ const VoteTable = () => {
     fetchContractDetails();
   }, [status, account, ethereum]);
 
-  const fetchVotes = async (contractInstance: ethers.Contract) => {
-    if (contractInstance && account) {
-      try {
-        const groupId = await getGroupIdForUser(account.toLowerCase());
-        if (groupId !== null) {
-          console.log('Group ID:', groupId);
-          const result = await contractInstance.getAccessibleVotes(groupId);
-  
-          if (!result || !Array.isArray(result[0])) {
-            console.error('Unexpected result format:', result);
-            setError('Unexpected result format from contract');
-            return;
-          }
-  
-          const [voteIDs, voteNames, startVoteTimes, endVoteTimes, openStatuses] = result;
-  
+  useEffect(() => {
+    const fetchVotes = async () => {
+      if (contract && account) {
+        try {
+          const groupId = await getGroupIdForUser(account.toLowerCase());
+          if (groupId === null) throw new Error("Group ID not found for the user");
+
+          const result = await contract.getAccessibleVotes(groupId);
           console.log('Result from contract:', result);
-  
-          const formattedVotes = voteIDs.map((voteID: BigInt, index: number) => {
+
+          const [voteIDs, voteNames, startVoteTimes, durations, openStatuses] = result;
+
+          const formattedVotes = voteIDs.map((voteID: ethers.BigNumberish, index: number) => {
             const startDate = new Date(Number(startVoteTimes[index]) * 1000);
-            const endDate = new Date(Number(endVoteTimes[index]) * 1000);
-            console.log('vote:', voteID); // Log each vote
-            console.log('startDate:', startDate);
-            console.log('endDate:', endDate);
-  
+            const endDate = new Date((Number(startVoteTimes[index]) + Number(durations[index])) * 1000);
+
+            const dateFormatter = new Intl.DateTimeFormat('en-GB', {
+              hour: '2-digit',
+              minute: '2-digit',
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            });
+
             return {
               id: voteID.toString(),
               name: voteNames[index],
-              startDate: isNaN(startDate.getTime()) ? 'Invalid Date' : startDate.toISOString(),
-              endDate: isNaN(endDate.getTime()) ? 'Invalid Date' : endDate.toISOString(),
+              startDate: dateFormatter.format(startDate),
+              endDate: dateFormatter.format(endDate),
               status: openStatuses[index],
             };
           });
+
           setVotes(formattedVotes);
-        } else {
-          setError('Group ID not found for the user.');
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            console.error('Error fetching votes:', error.message);
+            setError(error.message);
+          } else {
+            console.error('An unexpected error occurred');
+            setError('An unexpected error occurred');
+          }
         }
-      } catch (error) {
-        console.error('Error fetching votes:', error);
-        setError('Error fetching votes');
       }
-    }
-  };
-  
-  
-  
+    };
+
+    fetchVotes();
+  }, [contract, account]);
+
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
@@ -166,11 +168,11 @@ const VoteTable = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Start Date</TableCell>
-                <TableCell>End Date</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Action</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Start Date</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>End Date</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -181,8 +183,8 @@ const VoteTable = () => {
                   <TableCell>{vote.endDate}</TableCell>
                   <TableCell>{vote.status ? 'Open' : 'Closed'}</TableCell>
                   <TableCell>
-                    <Button variant="contained" color="primary" onClick={() => navigate(`/vote/${vote.id}`)}>
-                      Vote
+                    <Button variant="contained" color="primary" onClick={() => navigate(`/voting-component/:${vote.id}`)}>
+                      Go to Vote
                     </Button>
                   </TableCell>
                 </TableRow>
