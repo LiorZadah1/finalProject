@@ -21,6 +21,55 @@ import type {
   TypedContractMethod,
 } from "./common";
 
+export declare namespace VotingSystem {
+  export type ParticipatedVoteDetailsStruct = {
+    voteID: BigNumberish;
+    voteName: string;
+    startVoteTime: BigNumberish;
+    duration: BigNumberish;
+    open: boolean;
+  };
+
+  export type ParticipatedVoteDetailsStructOutput = [
+    voteID: bigint,
+    voteName: string,
+    startVoteTime: bigint,
+    duration: bigint,
+    open: boolean
+  ] & {
+    voteID: bigint;
+    voteName: string;
+    startVoteTime: bigint;
+    duration: bigint;
+    open: boolean;
+  };
+
+  export type VoteDetailsStruct = {
+    voteID: BigNumberish;
+    voteName: string;
+    startVoteTime: BigNumberish;
+    duration: BigNumberish;
+    groupId: BigNumberish;
+    open: boolean;
+  };
+
+  export type VoteDetailsStructOutput = [
+    voteID: bigint,
+    voteName: string,
+    startVoteTime: bigint,
+    duration: bigint,
+    groupId: bigint,
+    open: boolean
+  ] & {
+    voteID: bigint;
+    voteName: string;
+    startVoteTime: bigint;
+    duration: bigint;
+    groupId: bigint;
+    open: boolean;
+  };
+}
+
 export interface VotingSystemInterface extends Interface {
   getFunction(
     nameOrSignature:
@@ -32,9 +81,12 @@ export interface VotingSystemInterface extends Interface {
       | "getAccessibleVotes"
       | "getOptionDetails"
       | "getOptionsCount"
+      | "getParticipatedVotes"
+      | "getUserVotes"
       | "getVote"
       | "getVoteResults"
       | "nextVoteID"
+      | "voteAdmins"
       | "votes"
   ): FunctionFragment;
 
@@ -75,6 +127,14 @@ export interface VotingSystemInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "getParticipatedVotes",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getUserVotes",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getVote",
     values: [BigNumberish]
   ): string;
@@ -85,6 +145,10 @@ export interface VotingSystemInterface extends Interface {
   encodeFunctionData(
     functionFragment: "nextVoteID",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "voteAdmins",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "votes", values: [BigNumberish]): string;
 
@@ -105,12 +169,21 @@ export interface VotingSystemInterface extends Interface {
     functionFragment: "getOptionsCount",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "getParticipatedVotes",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getUserVotes",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "getVote", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getVoteResults",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "nextVoteID", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "voteAdmins", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "votes", data: BytesLike): Result;
 }
 
@@ -216,15 +289,28 @@ export interface VotingSystem extends BaseContract {
     "view"
   >;
 
+  getParticipatedVotes: TypedContractMethod<
+    [userAddress: AddressLike],
+    [VotingSystem.ParticipatedVoteDetailsStructOutput[]],
+    "view"
+  >;
+
+  getUserVotes: TypedContractMethod<
+    [userAddress: AddressLike],
+    [VotingSystem.VoteDetailsStructOutput[]],
+    "view"
+  >;
+
   getVote: TypedContractMethod<
     [voteID: BigNumberish],
     [
-      [string, bigint, bigint, boolean, bigint] & {
+      [string, bigint, bigint, bigint, bigint, boolean] & {
         voteName: string;
+        voteID2: bigint;
         startVoteTime: bigint;
         duration: bigint;
-        open: boolean;
         optionsCount: bigint;
+        open: boolean;
       }
     ],
     "view"
@@ -238,10 +324,12 @@ export interface VotingSystem extends BaseContract {
 
   nextVoteID: TypedContractMethod<[], [bigint], "view">;
 
+  voteAdmins: TypedContractMethod<[arg0: BigNumberish], [string], "view">;
+
   votes: TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, bigint, bigint, bigint, bigint, bigint, boolean, bigint] & {
+      [string, bigint, bigint, bigint, bigint, bigint, boolean] & {
         voteName: string;
         voteID: bigint;
         startVoteTime: bigint;
@@ -249,7 +337,6 @@ export interface VotingSystem extends BaseContract {
         groupId: bigint;
         optionsCount: bigint;
         open: boolean;
-        lastVoterIndex: bigint;
       }
     ],
     "view"
@@ -323,16 +410,31 @@ export interface VotingSystem extends BaseContract {
     nameOrSignature: "getOptionsCount"
   ): TypedContractMethod<[voteID: BigNumberish], [bigint], "view">;
   getFunction(
+    nameOrSignature: "getParticipatedVotes"
+  ): TypedContractMethod<
+    [userAddress: AddressLike],
+    [VotingSystem.ParticipatedVoteDetailsStructOutput[]],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getUserVotes"
+  ): TypedContractMethod<
+    [userAddress: AddressLike],
+    [VotingSystem.VoteDetailsStructOutput[]],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "getVote"
   ): TypedContractMethod<
     [voteID: BigNumberish],
     [
-      [string, bigint, bigint, boolean, bigint] & {
+      [string, bigint, bigint, bigint, bigint, boolean] & {
         voteName: string;
+        voteID2: bigint;
         startVoteTime: bigint;
         duration: bigint;
-        open: boolean;
         optionsCount: bigint;
+        open: boolean;
       }
     ],
     "view"
@@ -348,11 +450,14 @@ export interface VotingSystem extends BaseContract {
     nameOrSignature: "nextVoteID"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
+    nameOrSignature: "voteAdmins"
+  ): TypedContractMethod<[arg0: BigNumberish], [string], "view">;
+  getFunction(
     nameOrSignature: "votes"
   ): TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, bigint, bigint, bigint, bigint, bigint, boolean, bigint] & {
+      [string, bigint, bigint, bigint, bigint, bigint, boolean] & {
         voteName: string;
         voteID: bigint;
         startVoteTime: bigint;
@@ -360,7 +465,6 @@ export interface VotingSystem extends BaseContract {
         groupId: bigint;
         optionsCount: bigint;
         open: boolean;
-        lastVoterIndex: bigint;
       }
     ],
     "view"

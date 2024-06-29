@@ -1,4 +1,3 @@
-// src/components/ManagementComponent.tsx
 import React from 'react';
 import { Container, Typography, Grid, Box, Paper } from '@mui/material';
 import UserVotes from './UserVotes';
@@ -21,9 +20,9 @@ const ManagementComponent: React.FC = () => {
               <Grid item xs={12}>
                 <Paper elevation={3}>
                   <Box p={2}>
-                    <Typography variant="h5" component="h2" gutterBottom>
+                    {/* <Typography variant="h5" component="h2" gutterBottom>
                       Add Voter Address
-                    </Typography>
+                    </Typography> */}
                     <AddVoterAddress />
                   </Box>
                 </Paper>
@@ -31,9 +30,9 @@ const ManagementComponent: React.FC = () => {
               <Grid item xs={12} md={6}>
                 <Paper elevation={3}>
                   <Box p={2}>
-                    <Typography variant="h5" component="h2" gutterBottom>
+                    {/* <Typography variant="h5" component="h2" gutterBottom>
                       Votes Created By Me
-                    </Typography>
+                    </Typography> */}
                     <UserVotes />
                   </Box>
                 </Paper>
@@ -43,9 +42,9 @@ const ManagementComponent: React.FC = () => {
           <Grid item xs={12} md={6}>
             <Paper elevation={3}>
               <Box p={2}>
-                <Typography variant="h5" component="h2" gutterBottom>
+                {/* <Typography variant="h5" component="h2" gutterBottom>
                   Votes I've Participated In
-                </Typography>
+                </Typography> */}
                 <ParticipatedVotes />
               </Box>
             </Paper>

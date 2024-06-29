@@ -1,4 +1,3 @@
-// src/components/AddVoteAddress.tsx
 import React, { useState } from 'react';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebaseConfig';

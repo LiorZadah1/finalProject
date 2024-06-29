@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useMetaMask } from "metamask-react";
 import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
 import { getCurrentVoteId, fetchAndUpdateVoteId } from '../utils/fetchAndUpdateVoteId';
@@ -111,6 +111,10 @@ const CreateVote: React.FC = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
+      if (!account) {
+        throw new Error('Account is not available.');
+      }
+
       alert("Please check your MetaMask extention :)")
       const startTime = BigInt(Date.parse(startVoteTime) / 1000);
       const duration = BigInt(voteDuration) * 24n * 60n * 60n; // Convert days to seconds
@@ -125,6 +129,11 @@ const CreateVote: React.FC = () => {
       const tx = await contract.createVote(voteID, voteName, startTime, duration, groupID, options);
       await tx.wait();
       console.log(tx);
+      
+      // Add to usersVotes collection
+      const userVotesRef = doc(db, 'usersVotes', account.toLowerCase());
+      await setDoc(userVotesRef, { votes: arrayUnion({ voteID, voteName }) }, { merge: true });
+
       alert(`Vote successfully created with ID: ${voteID}`);
       resetForm();
     } catch (error: unknown) {

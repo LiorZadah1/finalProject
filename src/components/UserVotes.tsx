@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import { createContract } from '../utils/createContract';
+import { useMetaMask } from "metamask-react";
 import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
-import { useMetaMask } from "metamask-react";
-import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
-
 import {
   Container,
   Typography,
@@ -21,40 +17,38 @@ import {
 } from '@mui/material';
 
 interface Vote {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
+  voteID: string;
+  voteName: string;
 }
 
 const UserVotes: React.FC = () => {
+  const { status, account } = useMetaMask();
   const [votes, setVotes] = useState<Vote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { status, account } = useMetaMask();
 
   useEffect(() => {
     async function fetchData() {
       try {
         if (status === "connected" && account) {
-          const docRef = doc(db, 'users', account);
+          const docRef = doc(db, 'usersVotes', account);
           const docSnap = await getDoc(docRef);
 
           if (!docSnap.exists()) {
-            throw new Error('No contract information available!');
+            throw new Error('No user votes information available!');
           }
-          const abi = VotingSystem.abi;
-          const { contractAddress } = docSnap.data();
-          if (!abi || !contractAddress) {
-            throw new Error('Contract ABI or address is missing.');
-          }
-
-          const contractInstance = await createContract(window.ethereum, contractAddress, abi);
-          await fetchUserVotes(contractInstance);
+          const userVotes = docSnap.data().votes;
+          console.log("User Votes from Firestore: ", userVotes);
+          
+          const formattedVotes = userVotes.map((vote: any) => ({
+            voteID: vote.voteID.toString(),
+            voteName: vote.voteName,
+          }));
+          setVotes(formattedVotes);
         }
       } catch (error: unknown) {
         if (error instanceof Error) {
-          console.error('Failed to load contract:', error.message);
+          console.error('Failed to load user votes:', error.message);
           setError(error.message);
         } else {
           console.error('An unexpected error occurred');
@@ -65,26 +59,6 @@ const UserVotes: React.FC = () => {
       }
     }
 
-    async function fetchUserVotes(contract: ethers.Contract) {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const userAddress = await signer.getAddress();
-      const userVoteIDs = await contract.getUserVotes(userAddress);
-      
-      const userVotes = await Promise.all(
-        userVoteIDs.map(async (voteID: ethers.BigNumberish) => {
-          const voteData = await contract.votes(voteID);
-          return {
-            id: voteID.toString(),
-            name: voteData.voteName,
-            startDate: new Date(Number(voteData.startVoteTime) * 1000).toISOString(),
-            endDate: new Date((Number(voteData.startVoteTime) + Number(voteData.duration)) * 1000).toISOString(),
-          };
-        })
-      );
-      setVotes(userVotes);
-    }
-
     fetchData();
   }, [status, account]);
 
@@ -93,7 +67,7 @@ const UserVotes: React.FC = () => {
       <Container>
         <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
           <CircularProgress />
-          <Typography>Loading votes created by you...</Typography>
+          <Typography>Loading user votes...</Typography>
         </Box>
       </Container>
     );
@@ -117,17 +91,15 @@ const UserVotes: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Start Date</TableCell>
-                <TableCell>End Date</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Vote ID</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Vote Name</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {votes.map((vote) => (
-                <TableRow key={vote.id}>
-                  <TableCell>{vote.name}</TableCell>
-                  <TableCell>{vote.startDate}</TableCell>
-                  <TableCell>{vote.endDate}</TableCell>
+                <TableRow key={vote.voteID}>
+                  <TableCell>{vote.voteID}</TableCell>
+                  <TableCell>{vote.voteName}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -135,7 +107,7 @@ const UserVotes: React.FC = () => {
         </TableContainer>
       ) : (
         <Typography variant="body1" component="p">
-          No votes created by you yet.
+          No votes created yet.
         </Typography>
       )}
     </Container>

@@ -76,9 +76,11 @@ const App = () => {
       <Router>
         <AppBar position="static">
           <Toolbar>
+          <Button color="inherit" href="/" style={{ textTransform: 'none' }}>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               Voting System
             </Typography>
+            </Button>
             <Box sx={{ flexGrow: 1 }} />
             <Box>
               <Button color="inherit" href="/vote-table">Votes Table</Button>
