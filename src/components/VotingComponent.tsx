@@ -133,7 +133,20 @@ const VotingComponent: React.FC = () => {
       const voteIdBigInt = BigInt(cleanedVoteID); // Convert voteID to BigInt
 
       console.log(`Casting vote for voteID: ${voteIdBigInt} with option index: ${selectedOptionIndex}`);
-      const tx = await contract.castVote(voteIdBigInt, BigInt(selectedOptionIndex));
+
+      // Get the estimated gas price
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const gasPrice = (await provider.getFeeData()).gasPrice;
+
+      // Estimate gas for the specific transaction
+      const estimatedGas = await contract.castVote.estimateGas(voteIdBigInt, BigInt(selectedOptionIndex));
+
+      // Send the transaction with the estimated gas and gas price
+      const tx = await contract.castVote(voteIdBigInt, BigInt(selectedOptionIndex), {
+        gasLimit: estimatedGas,
+        gasPrice: gasPrice,
+      });
+
       await tx.wait();
       alert('Vote successfully cast!');
     } catch (error: unknown) {
