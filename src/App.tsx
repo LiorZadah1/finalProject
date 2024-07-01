@@ -18,56 +18,108 @@ const App = () => {
   if (status === "initializing") return <div>Synchronisation with MetaMask ongoing...</div>;
   if (status === "unavailable") return <div>MetaMask not available</div>;
   if (status === "notConnected") return (
-    <Container maxWidth="sm" style={{ marginTop: '2rem' }}>
-      <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                Voting System
-      </Typography>
-      <Typography variant="h3" component="h1" gutterBottom>
-          Welcome to the Voting System
-        </Typography>
-        <Typography variant="h5" component="h2" gutterBottom>
-          Secure, Transparent, and Decentralized Voting
-        </Typography>
-      <Button
-        onClick={connect}
-        variant="contained"
-        color="primary"
-        fullWidth
-        style={{
-          padding: '1rem',
-          fontSize: '1.2rem',
-          backgroundColor: '#3f51b5',
-          color: '#fff',
-          textTransform: 'none',
-          boxShadow: '0 3px 5px 2px rgba(63, 81, 181, .3)'
-        }}
+    <>
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        height="100vh"
+        textAlign="center"
+        bgcolor="#f0f0f0"
+        padding={4}
       >
-        Connect to MetaMask
-      </Button>
-    </Container>
-  );
-  if (status === "connecting") return (
-    <Container maxWidth="sm" style={{ marginTop: '2rem' }}>
-      <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                Voting System
-      </Typography>
-      <Typography variant="h3" component="h1" gutterBottom>
-          Welcome to the Voting System
+        <Typography
+          variant="h3"
+          component="h1"
+          gutterBottom
+          sx={{ 
+            fontWeight: 'bold', 
+            color: '#1976d2', 
+            marginBottom: 2 
+          }}
+        >
+          Welcome to the Blockchain-based Voting System
         </Typography>
-        <Typography variant="h5" component="h2" gutterBottom>
+        <Typography
+          variant="h5"
+          component="h2"
+          gutterBottom
+          sx={{ 
+            color: '#555', 
+            marginBottom: 4 
+          }}
+        >
           Secure, Transparent, and Decentralized Voting
         </Typography>
-      <Box textAlign="center" style={{
-        padding: '1rem',
-        fontSize: '1.5rem',
-        backgroundColor: '#f3f3f3',
-        color: '#333',
-        borderRadius: '8px',
-        boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .2)'
-      }}>
-        Connecting... Check your MetaMask extension.
-      </Box>
-    </Container>
+        <Button
+          onClick={connect}
+          variant="contained"
+          color="primary"
+          fullWidth
+          style={{
+            padding: '1rem',
+            fontSize: '1.2rem',
+            backgroundColor: '#3f51b5',
+            color: '#fff',
+            textTransform: 'none',
+            boxShadow: '0 3px 5px 2px rgba(63, 81, 181, .3)'
+          }}
+        >
+          Connect to MetaMask
+        </Button>
+        </Box>
+    </>
+  );
+  
+  if (status === "connecting") return (
+    <>
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        height="100vh"
+        textAlign="center"
+        bgcolor="#f0f0f0"
+        padding={4}
+      >
+        <Typography
+          variant="h3"
+          component="h1"
+          gutterBottom
+          sx={{ 
+            fontWeight: 'bold', 
+            color: '#1976d2', 
+            marginBottom: 2 
+          }}
+        >
+          Welcome to the Blockchain-based Voting System
+        </Typography>
+        <Typography
+          variant="h5"
+          component="h2"
+          gutterBottom
+          sx={{ 
+            color: '#555', 
+            marginBottom: 4 
+          }}
+        >
+          Secure, Transparent, and Decentralized Voting
+        </Typography>
+        <Typography
+          variant="h5"
+          component="h2"
+          gutterBottom
+          sx={{ 
+            color: '#555', 
+            marginBottom: 4 
+          }}
+        >
+          Connecting - Please check your MetaMask extention.
+        </Typography>
+        </Box>
+    </>
   );
 
   if (status === "connected") {

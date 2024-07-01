@@ -26,10 +26,12 @@ interface Option {
 interface Vote {
   id: number;
   options: Option[];
+  status: string;
 }
 
 const ResultsComponent: React.FC = () => {
-  const [votes, setVotes] = useState<Vote[]>([]);
+  const [openVotes, setOpenVotes] = useState<Vote[]>([]);
+  const [closedVotes, setClosedVotes] = useState<Vote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { status, account } = useMetaMask();
@@ -80,9 +82,10 @@ const ResultsComponent: React.FC = () => {
         const q = query(votesRef, where('id', '<=', latestVoteId));
         const querySnapshot = await getDocs(q);
 
-        const voteDocs = querySnapshot.docs.map(doc => doc.data()).filter(vote => vote.status === 'closed');
+        const voteDocs = querySnapshot.docs.map(doc => doc.data());
 
-        const votesArray: Vote[] = [];
+        const openVotesArray: Vote[] = [];
+        const closedVotesArray: Vote[] = [];
 
         for (const vote of voteDocs) {
           const voteID = vote.id;
@@ -99,10 +102,15 @@ const ResultsComponent: React.FC = () => {
             })
           );
 
-          votesArray.push({ id: voteID, options: optionsArray });
+          if (vote.status === 'open') {
+            openVotesArray.push({ id: voteID, options: optionsArray, status: vote.status });
+          } else {
+            closedVotesArray.push({ id: voteID, options: optionsArray, status: vote.status });
+          }
         }
 
-        setVotes(votesArray);
+        setOpenVotes(openVotesArray);
+        setClosedVotes(closedVotesArray);
       } catch (error: unknown) {
         if (error instanceof Error) {
           console.error('Error fetching vote results:', error.message);
@@ -139,6 +147,37 @@ const ResultsComponent: React.FC = () => {
       <Typography variant="h4" component="h1" gutterBottom>
         Vote Results
       </Typography>
+
+      <Typography variant="h5" component="h2" gutterBottom>
+        Open Votes
+      </Typography>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Vote ID</TableCell>
+              <TableCell>Option Name</TableCell>
+              <TableCell>Total Votes</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {openVotes.map((vote, index) => {
+              const totalVotes = vote.options.reduce((acc, option) => acc + option.voteCount, 0);
+              return (
+                <TableRow key={index}>
+                  <TableCell>{vote.id}</TableCell>
+                  <TableCell>{vote.options.map(option => option.optionName).join(', ')}</TableCell>
+                  <TableCell>{totalVotes}</TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Typography variant="h5" component="h2" gutterBottom>
+        Closed Votes
+      </Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -149,7 +188,7 @@ const ResultsComponent: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {votes.map((vote, index) => {
+            {closedVotes.map((vote, index) => {
               const maxVoteCount = Math.max(...vote.options.map(option => option.voteCount));
               return (
                 <React.Fragment key={index}>

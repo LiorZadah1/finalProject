@@ -66,6 +66,19 @@ contract VotingSystem {
         admin = msg.sender;
     }
 
+    //function for adding voter for specific vote
+    // function addVoter(uint voteID, address voterAddress, uint groupId) public onlyAdmin {
+    //     require(votes[voteID].voteID != 0, "Vote does not exist");
+    //     Vote storage vote = votes[voteID];
+    //     uint endVoteTime = vote.startVoteTime + vote.duration;
+    //     require(block.timestamp < endVoteTime, "Voting time has ended.");
+    //     require(vote.voterIndexMap[voterAddress] == 0, "The voter exists already in the system.");
+
+    //     vote.voters.push(Voter(voterAddress, true, false, voteID, groupId));
+    //     vote.voterIndexMap[voterAddress] = vote.voters.length;
+    // }
+
+    //function for adding voter to the voters array?
     function addVoter(uint voteID, address voterAddress, uint groupId) public onlyAdmin {
         require(votes[voteID].voteID != 0, "Vote does not exist");
         Vote storage vote = votes[voteID];
@@ -91,7 +104,7 @@ contract VotingSystem {
         for (uint i = 0; i < voting_options.length; i++) {
             addOption(nextVoteID, voting_options[i]);
         }
-
+        addVoter(nextVoteID, msg.sender, groupId);
         voteAdmins[nextVoteID] = msg.sender;
     }
 
