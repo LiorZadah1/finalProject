@@ -79,15 +79,16 @@ contract VotingSystem {
     // }
 
     //function for adding voter to the voters array?
-    function addVoter(uint voteID, address voterAddress, uint groupId) public onlyAdmin {
+    function addVoter(uint voteID, address[] memory voterAddreses, uint groupId) public onlyAdmin {
         require(votes[voteID].voteID != 0, "Vote does not exist");
         Vote storage vote = votes[voteID];
         uint endVoteTime = vote.startVoteTime + vote.duration;
         require(block.timestamp < endVoteTime, "Voting time has ended.");
-        require(vote.voterIndexMap[voterAddress] == 0, "The voter exists already in the system.");
-
-        vote.voters.push(Voter(voterAddress, true, false, voteID, groupId));
-        vote.voterIndexMap[voterAddress] = vote.voters.length;
+        for (uint i = 0; i < voterAddreses.length; i++){
+            require(vote.voterIndexMap[voterAddreses[i]] == 0, "The voter exists already in the system.");
+            vote.voters.push(Voter(voterAddreses[i], true, false, voteID, groupId));
+            vote.voterIndexMap[voterAddreses[i]] = vote.voters.length;
+        }
     }
 
     function createVote(uint voteID, string memory voteName, uint startTime, uint duration, uint groupId, string[] memory voting_options) public onlyAdmin {
@@ -104,7 +105,7 @@ contract VotingSystem {
         for (uint i = 0; i < voting_options.length; i++) {
             addOption(nextVoteID, voting_options[i]);
         }
-        addVoter(nextVoteID, msg.sender, groupId);
+        //addVoter(nextVoteID, msg.sender, groupId);
         voteAdmins[nextVoteID] = msg.sender;
     }
 

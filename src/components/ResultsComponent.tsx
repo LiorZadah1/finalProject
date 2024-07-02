@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { getCurrentVoteId } from '../utils/fetchAndUpdateVoteId';
 import { useMetaMask } from "metamask-react";
 import {
   Container,
@@ -26,7 +27,8 @@ interface Option {
 interface Vote {
   id: number;
   options: Option[];
-  status: string;
+  startDate: string;
+  duration: number;
 }
 
 const ResultsComponent: React.FC = () => {
@@ -41,7 +43,7 @@ const ResultsComponent: React.FC = () => {
     async function fetchData() {
       try {
         if (status === "connected" && account) {
-          const docRef = doc(db, 'users', account.toLowerCase());
+          const docRef = doc(db, 'voteManagers', account.toLowerCase());
           const docSnap = await getDoc(docRef);
 
           if (!docSnap.exists()) {
@@ -76,25 +78,36 @@ const ResultsComponent: React.FC = () => {
     async function fetchResults(contract: ethers.Contract) {
       try {
         const votesRef = collection(db, 'votesID');
-        const latestVoteIdDoc = await getDoc(doc(db, 'config', 'voteId'));
-        const latestVoteId = latestVoteIdDoc.exists() ? latestVoteIdDoc.data().value : 0;
+        const latestVoteId = await getCurrentVoteId();
+        // const latestVoteId = latestVoteIdDoc.exists() ? latestVoteIdDoc.data().value : 0;
+
+        console.log("Latest Vote ID:", latestVoteId);
 
         const q = query(votesRef, where('id', '<=', latestVoteId));
         const querySnapshot = await getDocs(q);
 
+        console.log("Query Snapshot Docs:", querySnapshot.docs);
+
         const voteDocs = querySnapshot.docs.map(doc => doc.data());
+        console.log("Vote Docs:", voteDocs);
 
         const openVotesArray: Vote[] = [];
         const closedVotesArray: Vote[] = [];
 
         for (const vote of voteDocs) {
           const voteID = vote.id;
+          console.log(`Fetching data for vote ID: ${voteID}`);
+
           const optionsCount = await contract.getOptionsCount(voteID);
+          console.log(`Options count for vote ID ${voteID}: ${optionsCount}`);
+
           const voteCounts: number[] = await contract.getVoteResults(voteID, optionsCount);
+          console.log(`Vote counts for vote ID ${voteID}:`, voteCounts);
 
           const optionsArray: Option[] = await Promise.all(
             Array.from({ length: optionsCount }).map(async (_, i) => {
               const optionDetails = await contract.getOptionDetails(voteID, i);
+              console.log(`Option details for vote ID ${voteID}, option ${i}:`, optionDetails);
               return {
                 optionName: optionDetails.optionName,
                 voteCount: voteCounts[i],
@@ -102,12 +115,23 @@ const ResultsComponent: React.FC = () => {
             })
           );
 
-          if (vote.status === 'open') {
-            openVotesArray.push({ id: voteID, options: optionsArray, status: vote.status });
+          console.log(`Options array for vote ID ${voteID}:`, optionsArray);
+
+          const startDate = new Date(Number(vote.startDate) * 1000);
+          const endDate = new Date(Number(vote.startDate) * 1000 + Number(vote.duration) * 1000);
+
+          const currentTime = new Date();
+          console.log(`Vote ID: ${voteID}, Start Date: ${startDate}, End Date: ${endDate}, Current Time: ${currentTime}`);
+
+          if (currentTime < endDate) {
+            openVotesArray.push({ id: voteID, options: optionsArray, startDate: vote.startDate, duration: vote.duration });
           } else {
-            closedVotesArray.push({ id: voteID, options: optionsArray, status: vote.status });
+            closedVotesArray.push({ id: voteID, options: optionsArray, startDate: vote.startDate, duration: vote.duration });
           }
         }
+
+        console.log("Open Votes Array:", openVotesArray);
+        console.log("Closed Votes Array:", closedVotesArray);
 
         setOpenVotes(openVotesArray);
         setClosedVotes(closedVotesArray);
@@ -156,7 +180,7 @@ const ResultsComponent: React.FC = () => {
           <TableHead>
             <TableRow>
               <TableCell>Vote ID</TableCell>
-              <TableCell>Option Name</TableCell>
+              <TableCell>Options</TableCell>
               <TableCell>Total Votes</TableCell>
             </TableRow>
           </TableHead>

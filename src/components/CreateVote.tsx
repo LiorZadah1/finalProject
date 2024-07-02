@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+// import { getAddress } from 'ethers/lib/utils';
 import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, collection, getDocs } from 'firebase/firestore';
 import { useMetaMask } from "metamask-react";
 import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
-import { getCurrentVoteId, fetchAndUpdateVoteId } from '../utils/fetchAndUpdateVoteId';
+import { getCurrentVoteId, fetchAndUpdateVoteId, getUsersByGroupId} from '../utils/fetchAndUpdateVoteId';
 import {
   Container,
   TextField,
@@ -32,7 +33,7 @@ const CreateVote: React.FC = () => {
     async function fetchData() {
       try {
         if (status === "connected" && account) {
-          const docRef = doc(db, 'users', account.toLowerCase()); // Ensure account is lowercase
+          const docRef = doc(db, 'voteManagers', account.toLowerCase()); // Ensure account is lowercase
           const docSnap = await getDoc(docRef);
           
           if (!docSnap.exists()) {
@@ -105,7 +106,7 @@ const CreateVote: React.FC = () => {
     setVoteDuration('');
     setGroupId('');
     setVoteOptions(['']);
-    setVoteId(null);
+    //setVoteId(null);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -115,7 +116,7 @@ const CreateVote: React.FC = () => {
         throw new Error('Account is not available.');
       }
 
-      alert("Please check your MetaMask extention :)")
+      alert("Please check your MetaMask extension :)")
       const startTime = BigInt(Date.parse(startVoteTime) / 1000);
       const duration = BigInt(voteDuration) * 24n * 60n * 60n; // Convert days to seconds
       const groupID = BigInt(groupId);
@@ -136,6 +137,20 @@ const CreateVote: React.FC = () => {
 
       alert(`Vote successfully created with ID: ${voteID}`);
       resetForm();
+
+      // now lets add all the users as voters 
+      try {
+        const usersInGroup = await getUsersByGroupId(account.toLowerCase(), groupId);
+        console.log(usersInGroup);
+        // Convert addresses to checksummed format
+        const checksummedAddresses = usersInGroup.map(addr => ethers.getAddress(addr));
+        const txx = await contract.addVoter(voteID, checksummedAddresses, groupID);
+        await txx.wait();
+        console.log(txx);
+      } catch (error) {
+        console.error('Failed to add voters:', error);
+      }
+
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error('Failed to create vote:', error.message);

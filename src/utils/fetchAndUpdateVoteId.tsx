@@ -1,5 +1,29 @@
+//import { Address } from 'web3';
 import { db } from '../firebaseConfig';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+
+interface User {
+  group: {
+    [key: string]: string[];
+  };
+}
+
+export const getUsersByGroupId = async (address: string, groupId: string): Promise<string[]> => {
+  const userDocRef = doc(db, 'voteManagers', address.toLowerCase());
+  const userDocSnap = await getDoc(userDocRef);
+
+  const addresses: string[] = [address.toLowerCase()]; // Initialize with the given address
+
+  if (userDocSnap.exists()) {
+    const userData = userDocSnap.data() as User;
+    if (userData.group && userData.group[groupId]) {
+      addresses.push(...userData.group[groupId]);
+    }
+  }
+
+  return addresses;
+};
+
 
 /**
  * Initializes the vote ID counter in Firestore if it doesn't exist.

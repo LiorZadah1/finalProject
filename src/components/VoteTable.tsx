@@ -44,7 +44,7 @@ const VoteTable = () => {
     const fetchContractDetails = async () => {
       if (status === "connected" && account) {
         try {        
-          const docRef = doc(db, 'users', account.toLowerCase());
+          const docRef = doc(db, 'voteManagers', account.toLowerCase());
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const abi = VotingSystem.abi;
@@ -89,6 +89,7 @@ const VoteTable = () => {
           const formattedVotes = voteIDs.map((voteID: ethers.BigNumberish, index: number) => {
             const startDate = new Date(Number(startVoteTimes[index]) * 1000);
             const endDate = new Date((Number(startVoteTimes[index]) + Number(durations[index])) * 1000);
+            const isVoteOpen = endDate > new Date();
 
             const dateFormatter = new Intl.DateTimeFormat('en-GB', {
               hour: '2-digit',
@@ -103,7 +104,7 @@ const VoteTable = () => {
               name: voteNames[index],
               startDate: dateFormatter.format(startDate),
               endDate: dateFormatter.format(endDate),
-              status: openStatuses[index],
+              status: isVoteOpen,
             };
           });
 
@@ -183,7 +184,12 @@ const VoteTable = () => {
                   <TableCell>{vote.endDate}</TableCell>
                   <TableCell>{vote.status ? 'Open' : 'Closed'}</TableCell>
                   <TableCell>
-                    <Button variant="contained" color="primary" onClick={() => navigate(`/voting-component/:${vote.id}`)}>
+                    <Button 
+                      variant="contained" 
+                      color="primary" 
+                      onClick={() => navigate(`/voting-component/:${vote.id}`)}
+                      disabled={!vote.status}
+                    >
                       Go to Vote
                     </Button>
                   </TableCell>
@@ -194,7 +200,7 @@ const VoteTable = () => {
         </TableContainer>
       ) : (
         <Typography variant="body1" component="p">
-          No votes available or loading data...
+          No votes available yet :)
         </Typography>
       )}
     </Container>

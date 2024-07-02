@@ -40,7 +40,7 @@ const VotingComponent: React.FC = () => {
     const fetchData = async () => {
       try {
         if (status === "connected" && account) {
-          const docRef = doc(db, 'users', account.toLowerCase());
+          const docRef = doc(db, 'voteManagers', account.toLowerCase());
           const docSnap = await getDoc(docRef);
           if (!docSnap.exists()) {
             throw new Error('No contract information available!');

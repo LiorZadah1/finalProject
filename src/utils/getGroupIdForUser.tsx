@@ -3,7 +3,7 @@ import { db } from '../firebaseConfig';
 
 export async function getGroupIdForUser(userAddress: string): Promise<number | null> {
   try {
-    const usersCollection = collection(db, 'users');
+    const usersCollection = collection(db, 'voteManagers');
     const usersSnapshot = await getDocs(usersCollection);
 
     for (const userDoc of usersSnapshot.docs) {

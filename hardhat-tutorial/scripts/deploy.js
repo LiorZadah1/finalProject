@@ -30,11 +30,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function clearUsersCollection() {
-  const usersCollection = collection(db, 'users');
+  const usersCollection = collection(db, 'voteManagers');
   const usersSnapshot = await getDocs(usersCollection);
   const deletePromises = usersSnapshot.docs.map((doc) => deleteDoc(doc.ref));
   await Promise.all(deletePromises);
-  console.log('*Cleared users collection*\n');
+  console.log('*Cleared voteManagers collection*\n');
 }
 
 async function main() {
@@ -62,7 +62,7 @@ async function main() {
     const contractAddressLowercase = contractAddress.toLowerCase();
 
     // Create new document in the users collection
-    const userRef = doc(db, 'users', signerAddressLowercase);
+    const userRef = doc(db, 'voteManagers', signerAddressLowercase);
     await setDoc(userRef, {
       address: signerAddressLowercase,
       contractAddress: contractAddressLowercase,

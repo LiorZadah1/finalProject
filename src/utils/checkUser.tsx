@@ -14,7 +14,7 @@ const useCheckUser = (): [boolean | null, boolean] => {
       if (status === "connected" && account) {
         console.log(`Checking account: ${account}`);
         try {
-          const docRef = doc(db, 'users', account);
+          const docRef = doc(db, 'voteManagers', account);
           const docSnap = await getDoc(docRef);
           
           if (docSnap.exists()) {

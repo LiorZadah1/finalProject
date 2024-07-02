@@ -23,7 +23,7 @@ const AddVoteAddress: React.FC = () => {
       return;
     }
     try {
-      const userRef = doc(db, 'users', account as string);
+      const userRef = doc(db, 'voteManagers', account as string);
       await updateDoc(userRef, {
         [`group.${groupId}`]: arrayUnion(voterAddress)
       });

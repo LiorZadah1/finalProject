@@ -45,7 +45,7 @@ export interface VotingSystemInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "addVoter",
-    values: [BigNumberish, AddressLike, BigNumberish]
+    values: [BigNumberish, AddressLike[], BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "admin", values?: undefined): string;
   encodeFunctionData(
@@ -170,7 +170,7 @@ export interface VotingSystem extends BaseContract {
   >;
 
   addVoter: TypedContractMethod<
-    [voteID: BigNumberish, voterAddress: AddressLike, groupId: BigNumberish],
+    [voteID: BigNumberish, voterAddreses: AddressLike[], groupId: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -277,7 +277,7 @@ export interface VotingSystem extends BaseContract {
   getFunction(
     nameOrSignature: "addVoter"
   ): TypedContractMethod<
-    [voteID: BigNumberish, voterAddress: AddressLike, groupId: BigNumberish],
+    [voteID: BigNumberish, voterAddreses: AddressLike[], groupId: BigNumberish],
     [void],
     "nonpayable"
   >;

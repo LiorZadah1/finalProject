@@ -37,7 +37,7 @@ const ParticipatedVotes: React.FC = () => {
     const fetchContractDetails = async () => {
       if (status === "connected" && account) {
         try {
-          const docRef = doc(db, 'users', account.toLowerCase());
+          const docRef = doc(db, 'voteManagers', account.toLowerCase());
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const abi = VotingSystem.abi;
