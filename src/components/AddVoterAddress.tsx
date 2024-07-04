@@ -50,7 +50,7 @@ const AddVoteAddress: React.FC = () => {
 
   return (
     <Container maxWidth="sm">
-      <Box mt={4}>
+      <Box mt={1}>
         <Typography variant="h4" component="h1" gutterBottom>
           Add Voter Address
         </Typography>

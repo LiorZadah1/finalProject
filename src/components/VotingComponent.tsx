@@ -126,6 +126,7 @@ const VotingComponent: React.FC = () => {
       if (!voteID) {
         throw new Error('Vote ID is not defined.');
       }
+      alert("Please check your MetaMask extension :)")
       let cleanedVoteID = voteID;
       if (voteID.startsWith(':')) {
         cleanedVoteID = voteID.substring(1);

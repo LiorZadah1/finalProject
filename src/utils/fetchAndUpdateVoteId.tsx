@@ -12,8 +12,7 @@ export const getUsersByGroupId = async (address: string, groupId: string): Promi
   const userDocRef = doc(db, 'voteManagers', address.toLowerCase());
   const userDocSnap = await getDoc(userDocRef);
 
-  const addresses: string[] = [address.toLowerCase()]; // Initialize with the given address
-
+  const addresses: string[] = []; // Initialize 
   if (userDocSnap.exists()) {
     const userData = userDocSnap.data() as User;
     if (userData.group && userData.group[groupId]) {

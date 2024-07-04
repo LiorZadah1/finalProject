@@ -24,14 +24,16 @@ import type {
 export interface VotingSystemInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "addOneVoter"
       | "addOption"
-      | "addVoter"
+      | "addVoters"
       | "admin"
       | "castVote"
       | "createVote"
       | "getAccessibleVotes"
       | "getOptionDetails"
       | "getOptionsCount"
+      | "getTotalVotes"
       | "getVote"
       | "getVoteResults"
       | "nextVoteID"
@@ -40,11 +42,15 @@ export interface VotingSystemInterface extends Interface {
   ): FunctionFragment;
 
   encodeFunctionData(
+    functionFragment: "addOneVoter",
+    values: [BigNumberish, AddressLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "addOption",
     values: [BigNumberish, string]
   ): string;
   encodeFunctionData(
-    functionFragment: "addVoter",
+    functionFragment: "addVoters",
     values: [BigNumberish, AddressLike[], BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "admin", values?: undefined): string;
@@ -76,12 +82,16 @@ export interface VotingSystemInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "getTotalVotes",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getVote",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "getVoteResults",
-    values: [BigNumberish, BigNumberish]
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "nextVoteID",
@@ -93,8 +103,12 @@ export interface VotingSystemInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "votes", values: [BigNumberish]): string;
 
+  decodeFunctionResult(
+    functionFragment: "addOneVoter",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "addOption", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "addVoter", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "addVoters", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "admin", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "castVote", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "createVote", data: BytesLike): Result;
@@ -108,6 +122,10 @@ export interface VotingSystemInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getOptionsCount",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getTotalVotes",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getVote", data: BytesLike): Result;
@@ -163,13 +181,19 @@ export interface VotingSystem extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  addOneVoter: TypedContractMethod<
+    [voteID: BigNumberish, voterAddreses: AddressLike, groupId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   addOption: TypedContractMethod<
     [voteID: BigNumberish, optionName: string],
     [void],
     "nonpayable"
   >;
 
-  addVoter: TypedContractMethod<
+  addVoters: TypedContractMethod<
     [voteID: BigNumberish, voterAddreses: AddressLike[], groupId: BigNumberish],
     [void],
     "nonpayable"
@@ -222,6 +246,8 @@ export interface VotingSystem extends BaseContract {
     "view"
   >;
 
+  getTotalVotes: TypedContractMethod<[voteID: BigNumberish], [bigint], "view">;
+
   getVote: TypedContractMethod<
     [voteID: BigNumberish],
     [
@@ -238,8 +264,17 @@ export interface VotingSystem extends BaseContract {
   >;
 
   getVoteResults: TypedContractMethod<
-    [voteID: BigNumberish, optionsCount: BigNumberish],
-    [bigint[]],
+    [],
+    [
+      [bigint[], bigint[], bigint[], string[], string[][], bigint[][]] & {
+        openVoteIDs: bigint[];
+        openVoteCounts: bigint[];
+        closedVoteIDs: bigint[];
+        closedVoteNames: string[];
+        closedOptionNames: string[][];
+        closedOptionCounts: bigint[][];
+      }
+    ],
     "view"
   >;
 
@@ -268,6 +303,13 @@ export interface VotingSystem extends BaseContract {
   ): T;
 
   getFunction(
+    nameOrSignature: "addOneVoter"
+  ): TypedContractMethod<
+    [voteID: BigNumberish, voterAddreses: AddressLike, groupId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "addOption"
   ): TypedContractMethod<
     [voteID: BigNumberish, optionName: string],
@@ -275,7 +317,7 @@ export interface VotingSystem extends BaseContract {
     "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "addVoter"
+    nameOrSignature: "addVoters"
   ): TypedContractMethod<
     [voteID: BigNumberish, voterAddreses: AddressLike[], groupId: BigNumberish],
     [void],
@@ -331,6 +373,9 @@ export interface VotingSystem extends BaseContract {
     nameOrSignature: "getOptionsCount"
   ): TypedContractMethod<[voteID: BigNumberish], [bigint], "view">;
   getFunction(
+    nameOrSignature: "getTotalVotes"
+  ): TypedContractMethod<[voteID: BigNumberish], [bigint], "view">;
+  getFunction(
     nameOrSignature: "getVote"
   ): TypedContractMethod<
     [voteID: BigNumberish],
@@ -349,8 +394,17 @@ export interface VotingSystem extends BaseContract {
   getFunction(
     nameOrSignature: "getVoteResults"
   ): TypedContractMethod<
-    [voteID: BigNumberish, optionsCount: BigNumberish],
-    [bigint[]],
+    [],
+    [
+      [bigint[], bigint[], bigint[], string[], string[][], bigint[][]] & {
+        openVoteIDs: bigint[];
+        openVoteCounts: bigint[];
+        closedVoteIDs: bigint[];
+        closedVoteNames: string[];
+        closedOptionNames: string[][];
+        closedOptionCounts: bigint[][];
+      }
+    ],
     "view"
   >;
   getFunction(

@@ -76,6 +76,7 @@ contract VotingSystem {
             vote.voterIndexMap[voterAddreses[i]] = vote.voters.length;
         }
     }
+
     function addOneVoter(uint voteID, address voterAddreses, uint groupId) public onlyAdmin {
         require(votes[voteID].voteID != 0, "Vote does not exist");
         Vote storage vote = votes[voteID];
@@ -84,7 +85,6 @@ contract VotingSystem {
         require(vote.voterIndexMap[voterAddreses] == 0, "The voter exists already in the system.");
         vote.voters.push(Voter(voterAddreses, true, false, voteID, groupId));
         vote.voterIndexMap[voterAddreses] = vote.voters.length;
-        
     }
 
     function createVote(uint voteID, string memory voteName, uint startTime, uint duration, uint groupId, string[] memory voting_options) public onlyAdmin {
@@ -105,13 +105,13 @@ contract VotingSystem {
         addOneVoter(nextVoteID, msg.sender, groupId);
     }
 
-    function getVoteResults(uint voteID, uint optionsCount) public view returns (uint[] memory) {
-        uint[] memory voteCounts = new uint[](optionsCount);
-        for (uint i = 0; i < optionsCount; i++) {
-            voteCounts[i] = votes[voteID].options[i].countOption;
-        }
-        return voteCounts;
-    }
+    // function getVoteResults(uint voteID) public view returns (uint[] memory) {
+    //     uint[] memory voteCounts = new uint[](votes[voteID].options.length);
+    //     for (uint i = 0; i < votes[voteID].options.length; i++) {
+    //         voteCounts[i] = votes[voteID].options[i].countOption;
+    //     }
+    //     return voteCounts;
+    // }
 
     function addOption(uint voteID, string memory optionName) public {
         require(votes[voteID].voteID != 0, "Vote does not exist");
@@ -193,64 +193,66 @@ contract VotingSystem {
         );
     }
 
-    // New function to get open votes
-    function getOpenVotes() public view returns (uint[] memory voteIDs, uint[] memory totalVotes) {
-        uint count = 0;
+    // New function to get vote results for both open and closed votes
+    function getVoteResults() public view returns (
+        uint[] memory openVoteIDs,
+        uint[] memory openVoteCounts,
+        uint[] memory closedVoteIDs,
+        string[] memory closedVoteNames,
+        string[][] memory closedOptionNames,
+        uint[][] memory closedOptionCounts
+    ) {
+        uint openCount = 0;
+        uint closedCount = 0;
+
+        // Count the open and closed votes
         for (uint i = 1; i <= nextVoteID; i++) {
             if (votes[i].open) {
-                count++;
+                openCount++;
+            } else {
+                closedCount++;
             }
         }
 
-        voteIDs = new uint[](count);
-        totalVotes = new uint[](count);
+        // Initialize arrays based on the counts
+        openVoteIDs = new uint[](openCount);
+        openVoteCounts = new uint[](openCount);
+        closedVoteIDs = new uint[](closedCount);
+        closedVoteNames = new string[](closedCount);
+        closedOptionNames = new string[][](closedCount);
+        closedOptionCounts = new uint[][](closedCount);
 
-        uint index = 0;
+        uint openIndex = 0;
+        uint closedIndex = 0;
+
+        // Populate the arrays with open and closed vote details
         for (uint i = 1; i <= nextVoteID; i++) {
             if (votes[i].open) {
-                voteIDs[index] = votes[i].voteID;
-                totalVotes[index] = getTotalVotes(votes[i].voteID);
-                index++;
+                openVoteIDs[openIndex] = votes[i].voteID;
+                openVoteCounts[openIndex] = getTotalVotes(votes[i].voteID);
+                openIndex++;
+            } else {
+                closedVoteIDs[closedIndex] = votes[i].voteID;
+                closedVoteNames[closedIndex] = votes[i].voteName;
+                closedOptionNames[closedIndex] = new string[](votes[i].options.length);
+                closedOptionCounts[closedIndex] = new uint[](votes[i].options.length);
+                for (uint j = 0; j < votes[i].options.length; j++) {
+                    closedOptionNames[closedIndex][j] = votes[i].options[j].optionName;
+                    closedOptionCounts[closedIndex][j] = votes[i].options[j].countOption;
+                }
+                closedIndex++;
             }
         }
+
+        return (openVoteIDs, openVoteCounts, closedVoteIDs, closedVoteNames, closedOptionNames, closedOptionCounts);
     }
 
-    // New function to get total votes for a vote
+    // Helper function to get total votes for a vote
     function getTotalVotes(uint voteID) public view returns (uint) {
         uint total = 0;
         for (uint i = 0; i < votes[voteID].options.length; i++) {
             total += votes[voteID].options[i].countOption;
         }
         return total;
-    }
-
-    // New function to get closed votes
-    function getClosedVotes() public view returns (uint[] memory voteIDs, string[] memory voteNames, string[][] memory optionNames, uint[][] memory voteCounts) {
-        uint count = 0;
-        for (uint i = 1; i <= nextVoteID; i++) {
-            if (!votes[i].open) {
-                count++;
-            }
-        }
-
-        voteIDs = new uint[](count);
-        voteNames = new string[](count);
-        optionNames = new string[][](count);
-        voteCounts = new uint[][](count);
-
-        uint index = 0;
-        for (uint i = 1; i <= nextVoteID; i++) {
-            if (!votes[i].open) {
-                voteIDs[index] = votes[i].voteID;
-                voteNames[index] = votes[i].voteName;
-                optionNames[index] = new string[](votes[i].options.length);
-                voteCounts[index] = new uint[](votes[i].options.length);
-                for (uint j = 0; j < votes[i].options.length; j++) {
-                    optionNames[index][j] = votes[i].options[j].optionName;
-                    voteCounts[index][j] = votes[i].options[j].countOption;
-                }
-                index++;
-            }
-        }
     }
 }

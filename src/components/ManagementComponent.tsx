@@ -4,6 +4,7 @@ import UserVotes from './UserVotes';
 import ParticipatedVotes from './ParticipatedVotes';
 import AddVoterAddress from './AddVoterAddress';
 import useCheckUser from '../utils/checkUser';
+import UserGroupAddresses from './UserGroupAddresses';
 
 const ManagementComponent: React.FC = () => {
   const [isValidUser, userLoading] = useCheckUser();
@@ -14,37 +15,35 @@ const ManagementComponent: React.FC = () => {
         <Typography variant="h3" component="h1" gutterBottom>
           Voting Management
         </Typography>
-        <Grid container spacing={4}>
+        <Grid container spacing={3}>
           {isValidUser && !userLoading && (
             <>
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <Paper elevation={3}>
                   <Box p={2}>
-                    {/* <Typography variant="h5" component="h2" gutterBottom>
-                      Add Voter Address
-                    </Typography> */}
                     <AddVoterAddress />
                   </Box>
                 </Paper>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} sm={6}>
                 <Paper elevation={3}>
                   <Box p={2}>
-                    {/* <Typography variant="h5" component="h2" gutterBottom>
-                      Votes Created By Me
-                    </Typography> */}
                     <UserVotes />
+                  </Box>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Paper elevation={3}>
+                  <Box p={2}>
+                    <UserGroupAddresses />
                   </Box>
                 </Paper>
               </Grid>
             </>
           )}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} sm={6}>
             <Paper elevation={3}>
               <Box p={2}>
-                {/* <Typography variant="h5" component="h2" gutterBottom>
-                  Votes I've Participated In
-                </Typography> */}
                 <ParticipatedVotes />
               </Box>
             </Paper>

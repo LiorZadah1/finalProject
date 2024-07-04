@@ -1,48 +1,100 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { createContract } from '../utils/createContract';
-import { db } from '../firebaseConfig';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { getCurrentVoteId } from '../utils/fetchAndUpdateVoteId';
+import { getDoc, doc } from 'firebase/firestore';
 import { useMetaMask } from "metamask-react";
 import {
   Container,
   Typography,
+  CircularProgress,
+  Box,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Paper,
-  CircularProgress
+  TableRow
 } from '@mui/material';
+import { db } from '../firebaseConfig';
+import { createContract } from '../utils/createContract';
 import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
-
-interface Option {
-  optionName: string;
-  voteCount: number;
-}
 
 interface Vote {
   id: number;
-  options: Option[];
-  startDate: string;
-  duration: number;
+  name: string;
+  startTime?: number;
+  duration?: number;
+  isOpen?: boolean;
+  options?: { name: string; count: number }[];
 }
 
 const ResultsComponent: React.FC = () => {
-  const [openVotes, setOpenVotes] = useState<Vote[]>([]);
-  const [closedVotes, setClosedVotes] = useState<Vote[]>([]);
+  const [votes, setVotes] = useState<Vote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { status, account } = useMetaMask();
   const [contract, setContract] = useState<ethers.Contract | null>(null);
 
   useEffect(() => {
+    async function fetchVotes() {
+      try {
+        if (status === "connected" && account) {
+          console.log('Fetching votes for user:', account);
+          const docRef = doc(db, 'usersVotes', account.toLowerCase());
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const userVotes = docSnap.data().votes as { voteID: number; voteName: string }[];
+            const votesData = userVotes.map(vote => ({
+              id: vote.voteID,
+              name: vote.voteName
+            }));
+            console.log('User votes:', votesData);
+            setVotes(votesData);
+            return votesData; // Return votesData to be used in fetchVoteDetails
+          } else {
+            throw new Error('No votes found for this user.');
+          }
+        }
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error('Failed to fetch votes:', error.message);
+          setError(error.message);
+        } else {
+          console.error('An unexpected error occurred');
+          setError('An unexpected error occurred');
+        }
+      }
+      return [];
+    }
+
+    async function fetchVoteDetails(contractInstance: ethers.Contract, voteID: number) {
+      try {
+        console.log(`Fetching details for vote ${voteID}...`);
+        const voteDetails = await contractInstance.getVote(voteID);
+        const options = await Promise.all(
+          [...Array(Number(voteDetails.optionsCount)).keys()].map(async (index) => {
+            const [optionName, countOption] = await contractInstance.getOptionDetails(voteID, index);
+            return { name: optionName, count: Number(countOption) };
+          })
+        );
+        console.log(`Details for vote ${voteID}:`, voteDetails, options);
+        return {
+          startTime: Number(voteDetails.startVoteTime), // Convert BigInt to Number
+          duration: Number(voteDetails.duration), // Convert BigInt to Number
+          isOpen: voteDetails.open,
+          options,
+        };
+      } catch (error) {
+        console.error(`Failed to fetch details for vote ${voteID}:`, error);
+        return null;
+      }
+    }
+
     async function fetchData() {
       try {
         if (status === "connected" && account) {
+          console.log('Fetching contract details...');
           const docRef = doc(db, 'voteManagers', account.toLowerCase());
           const docSnap = await getDoc(docRef);
 
@@ -56,15 +108,23 @@ const ResultsComponent: React.FC = () => {
             const contractInstance = await createContract(window.ethereum, contractAddress, abi);
             setContract(contractInstance);
 
-            // Fetch the results after setting the contract
-            await fetchResults(contractInstance);
+            const userVotes = await fetchVotes();
+
+            const updatedVotes = await Promise.all(
+              userVotes.map(async vote => {
+                const details = await fetchVoteDetails(contractInstance, vote.id);
+                return details ? { ...vote, ...details } : vote;
+              })
+            );
+            console.log('Updated votes with details:', updatedVotes);
+            setVotes(updatedVotes);
           } else {
             throw new Error('Ethereum object is not available.');
           }
         }
       } catch (error: unknown) {
         if (error instanceof Error) {
-          console.error('Failed to load contract:', error.message);
+          console.error('Failed to load contract or votes:', error.message);
           setError(error.message);
         } else {
           console.error('An unexpected error occurred');
@@ -75,85 +135,16 @@ const ResultsComponent: React.FC = () => {
       }
     }
 
-    async function fetchResults(contract: ethers.Contract) {
-      try {
-        const votesRef = collection(db, 'votesID');
-        const latestVoteId = await getCurrentVoteId();
-        // const latestVoteId = latestVoteIdDoc.exists() ? latestVoteIdDoc.data().value : 0;
-
-        console.log("Latest Vote ID:", latestVoteId);
-
-        const q = query(votesRef, where('id', '<=', latestVoteId));
-        const querySnapshot = await getDocs(q);
-
-        console.log("Query Snapshot Docs:", querySnapshot.docs);
-
-        const voteDocs = querySnapshot.docs.map(doc => doc.data());
-        console.log("Vote Docs:", voteDocs);
-
-        const openVotesArray: Vote[] = [];
-        const closedVotesArray: Vote[] = [];
-
-        for (const vote of voteDocs) {
-          const voteID = vote.id;
-          console.log(`Fetching data for vote ID: ${voteID}`);
-
-          const optionsCount = await contract.getOptionsCount(voteID);
-          console.log(`Options count for vote ID ${voteID}: ${optionsCount}`);
-
-          const voteCounts: number[] = await contract.getVoteResults(voteID, optionsCount);
-          console.log(`Vote counts for vote ID ${voteID}:`, voteCounts);
-
-          const optionsArray: Option[] = await Promise.all(
-            Array.from({ length: optionsCount }).map(async (_, i) => {
-              const optionDetails = await contract.getOptionDetails(voteID, i);
-              console.log(`Option details for vote ID ${voteID}, option ${i}:`, optionDetails);
-              return {
-                optionName: optionDetails.optionName,
-                voteCount: voteCounts[i],
-              };
-            })
-          );
-
-          console.log(`Options array for vote ID ${voteID}:`, optionsArray);
-
-          const startDate = new Date(Number(vote.startDate) * 1000);
-          const endDate = new Date(Number(vote.startDate) * 1000 + Number(vote.duration) * 1000);
-
-          const currentTime = new Date();
-          console.log(`Vote ID: ${voteID}, Start Date: ${startDate}, End Date: ${endDate}, Current Time: ${currentTime}`);
-
-          if (currentTime < endDate) {
-            openVotesArray.push({ id: voteID, options: optionsArray, startDate: vote.startDate, duration: vote.duration });
-          } else {
-            closedVotesArray.push({ id: voteID, options: optionsArray, startDate: vote.startDate, duration: vote.duration });
-          }
-        }
-
-        console.log("Open Votes Array:", openVotesArray);
-        console.log("Closed Votes Array:", closedVotesArray);
-
-        setOpenVotes(openVotesArray);
-        setClosedVotes(closedVotesArray);
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error('Error fetching vote results:', error.message);
-          setError(error.message);
-        } else {
-          console.error('An unexpected error occurred');
-          setError('An unexpected error occurred');
-        }
-      }
-    }
-
     fetchData();
   }, [status, account]);
 
   if (loading) {
     return (
       <Container>
-        <CircularProgress />
-        <Typography>Loading results...</Typography>
+        <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+          <CircularProgress />
+          <Typography>Loading votes...</Typography>
+        </Box>
       </Container>
     );
   }
@@ -167,74 +158,52 @@ const ResultsComponent: React.FC = () => {
   }
 
   return (
-    <Container>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Vote Results
-      </Typography>
-
-      <Typography variant="h5" component="h2" gutterBottom>
-        Open Votes
-      </Typography>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Vote ID</TableCell>
-              <TableCell>Options</TableCell>
-              <TableCell>Total Votes</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {openVotes.map((vote, index) => {
-              const totalVotes = vote.options.reduce((acc, option) => acc + option.voteCount, 0);
-              return (
-                <TableRow key={index}>
-                  <TableCell>{vote.id}</TableCell>
-                  <TableCell>{vote.options.map(option => option.optionName).join(', ')}</TableCell>
-                  <TableCell>{totalVotes}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Typography variant="h5" component="h2" gutterBottom>
-        Closed Votes
-      </Typography>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Vote ID</TableCell>
-              <TableCell>Option Name</TableCell>
-              <TableCell>Vote Count</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {closedVotes.map((vote, index) => {
-              const maxVoteCount = Math.max(...vote.options.map(option => option.voteCount));
-              return (
-                <React.Fragment key={index}>
-                  <TableRow>
-                    <TableCell rowSpan={vote.options.length + 1}>{vote.id}</TableCell>
-                  </TableRow>
-                  {vote.options.map((option, i) => (
-                    <TableRow key={i}>
-                      <TableCell style={option.voteCount === maxVoteCount ? { fontWeight: 'bold' } : {}}>
-                        {option.optionName}
-                      </TableCell>
-                      <TableCell style={option.voteCount === maxVoteCount ? { fontWeight: 'bold' } : {}}>
-                        {option.voteCount}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </React.Fragment>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+    <Container maxWidth="lg">
+      <Box mt={4}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          User Votes
+        </Typography>
+        <Box>
+          {votes.map(vote => (
+            <Paper key={vote.id} elevation={3} style={{ margin: '10px 0', padding: '10px' }}>
+              <Typography variant="h6">Vote ID: {vote.id}</Typography>
+              <Typography variant="body1">Vote Name: {vote.name}</Typography>
+              {vote.startTime !== undefined && (
+                <Typography variant="body2">Start Time: {new Date(vote.startTime * 1000).toLocaleString()}</Typography>
+              )}
+              {vote.duration !== undefined && (
+                <Typography variant="body2">Duration: {vote.duration} seconds</Typography>
+              )}
+              {vote.isOpen !== undefined && (
+                <Typography variant="body2">Status: {vote.isOpen ? 'Open' : 'Closed'}</Typography>
+              )}
+              {vote.options && (
+                <Box mt={2}>
+                  <Typography variant="body2" component="div">Options:</Typography>
+                  <TableContainer component={Paper}>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Option Name</TableCell>
+                          <TableCell>Vote Count</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {vote.options.map((option, index) => (
+                          <TableRow key={`${vote.id}-${index}`}>
+                            <TableCell>{option.name}</TableCell>
+                            <TableCell>{option.count}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
+            </Paper>
+          ))}
+        </Box>
+      </Box>
     </Container>
   );
 };

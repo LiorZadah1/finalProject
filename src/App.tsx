@@ -56,14 +56,14 @@ const App = () => {
           onClick={connect}
           variant="contained"
           color="primary"
-          fullWidth
           style={{
             padding: '1rem',
             fontSize: '1.2rem',
             backgroundColor: '#3f51b5',
             color: '#fff',
             textTransform: 'none',
-            boxShadow: '0 3px 5px 2px rgba(63, 81, 181, .3)'
+            boxShadow: '0 3px 5px 2px rgba(63, 81, 181, .3)',
+            width: 'auto'
           }}
         >
           Connect to MetaMask

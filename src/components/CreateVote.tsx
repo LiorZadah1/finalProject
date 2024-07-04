@@ -144,7 +144,7 @@ const CreateVote: React.FC = () => {
         console.log(usersInGroup);
         // Convert addresses to checksummed format
         const checksummedAddresses = usersInGroup.map(addr => ethers.getAddress(addr));
-        const txx = await contract.addVoter(voteID, checksummedAddresses, groupID);
+        const txx = await contract.addVoters(voteID, checksummedAddresses, groupID);
         await txx.wait();
         console.log(txx);
       } catch (error) {
