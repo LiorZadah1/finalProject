@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { Container, TextField, Button, Typography, Box, Grid } from '@mui/material';
+import { Container, TextField, Button, Typography, Box, Grid, Card, CardContent } from '@mui/material';
 import { useMetaMask } from "metamask-react";
 import useCheckUser from '../utils/checkUser';
 
-const AddVoteAddress: React.FC = () => {
+const AddVoterAddress: React.FC = () => {
   const { account } = useMetaMask();
   const [groupId, setGroupId] = useState('');
   const [voterAddress, setVoterAddress] = useState('');
@@ -17,6 +17,7 @@ const AddVoteAddress: React.FC = () => {
     setGroupId('');
     setVoterAddress('');
   };
+
   const handleAddVoter = async () => {
     if (!groupId || !voterAddress) {
       setError('Group ID and Voter Address are required');
@@ -50,48 +51,52 @@ const AddVoteAddress: React.FC = () => {
 
   return (
     <Container maxWidth="sm">
-      <Box mt={1}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Add Voter Address
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <TextField
-              label="Group ID"
-              variant="outlined"
-              fullWidth
-              value={groupId}
-              onChange={(e) => setGroupId(e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              label="Voter Address"
-              variant="outlined"
-              fullWidth
-              value={voterAddress}
-              onChange={(e) => setVoterAddress(e.target.value)}
-            />
-          </Grid>
-          {error && (
-            <Grid item xs={12}>
-              <Typography color="error">{error}</Typography>
+      <Box mt={4}>
+        <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(255, 255, 255, 0.7)' }}>
+          <CardContent>
+            <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+              Add Voter Address
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  label="Group ID"
+                  variant="outlined"
+                  fullWidth
+                  value={groupId}
+                  onChange={(e) => setGroupId(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Voter Address"
+                  variant="outlined"
+                  fullWidth
+                  value={voterAddress}
+                  onChange={(e) => setVoterAddress(e.target.value)}
+                />
+              </Grid>
+              {error && (
+                <Grid item xs={12}>
+                  <Typography color="error">{error}</Typography>
+                </Grid>
+              )}
+              {message && (
+                <Grid item xs={12}>
+                  <Typography color="primary">{message}</Typography>
+                </Grid>
+              )}
+              <Grid item xs={12}>
+                <Button onClick={handleAddVoter} variant="contained" color="primary" fullWidth>
+                  Add Voter
+                </Button>
+              </Grid>
             </Grid>
-          )}
-          {message && (
-            <Grid item xs={12}>
-              <Typography color="primary">{message}</Typography>
-            </Grid>
-          )}
-          <Grid item xs={12}>
-            <Button onClick={handleAddVoter} variant="contained" color="primary" fullWidth>
-              Add Voter
-            </Button>
-          </Grid>
-        </Grid>
+          </CardContent>
+        </Card>
       </Box>
     </Container>
   );
 };
 
-export default AddVoteAddress;
+export default AddVoterAddress;

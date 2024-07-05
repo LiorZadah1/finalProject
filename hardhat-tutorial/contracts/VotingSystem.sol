@@ -71,7 +71,10 @@ contract VotingSystem {
         uint endVoteTime = vote.startVoteTime + vote.duration;
         require(block.timestamp < endVoteTime, "Voting time has ended.");
         for (uint i = 0; i < voterAddreses.length; i++){
-            require(vote.voterIndexMap[voterAddreses[i]] == 0, "The voter exists already in the system.");
+            //require(vote.voterIndexMap[voterAddreses[i]] == 0, "The voter exists already in the system.");
+            if (vote.voterIndexMap[voterAddreses[i]] != 0)
+                //the voter is already in the system
+                continue;
             vote.voters.push(Voter(voterAddreses[i], true, false, voteID, groupId));
             vote.voterIndexMap[voterAddreses[i]] = vote.voters.length;
         }
@@ -82,7 +85,10 @@ contract VotingSystem {
         Vote storage vote = votes[voteID];
         uint endVoteTime = vote.startVoteTime + vote.duration;
         require(block.timestamp < endVoteTime, "Voting time has ended.");
-        require(vote.voterIndexMap[voterAddreses] == 0, "The voter exists already in the system.");
+        //require(vote.voterIndexMap[voterAddreses] == 0, "The voter exists already in the system.");
+        if (vote.voterIndexMap[voterAddreses] != 0)
+                //the voter is already in the system
+                return;
         vote.voters.push(Voter(voterAddreses, true, false, voteID, groupId));
         vote.voterIndexMap[voterAddreses] = vote.voters.length;
     }
@@ -254,5 +260,15 @@ contract VotingSystem {
             total += votes[voteID].options[i].countOption;
         }
         return total;
+    }
+
+    function hasVoted(uint voteID, address userAddress) public view returns (bool) {
+        Vote storage vote = votes[voteID];
+        uint voterIndex = vote.voterIndexMap[userAddress];
+        if (voterIndex == 0) {
+            return false;
+        }
+        Voter storage voter = vote.voters[voterIndex - 1];
+        return voter.hasVoted;
     }
 }

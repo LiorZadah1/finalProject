@@ -25,26 +25,34 @@ const firebaseConfig = {
   appId: "1:402500146746:web:f7aeb327e3c2c2a771c703",
   measurementId: "G-VEZFL81GBP"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-async function clearUsersCollection() {
-  const usersCollection = collection(db, 'voteManagers');
-  const usersSnapshot = await getDocs(usersCollection);
-  const deletePromises = usersSnapshot.docs.map((doc) => deleteDoc(doc.ref));
+async function clearCollection(collectionName) {
+  const collectionRef = collection(db, collectionName);
+  const snapshot = await getDocs(collectionRef);
+  const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
   await Promise.all(deletePromises);
-  console.log('*Cleared voteManagers collection*\n');
+  console.log(`*Cleared ${collectionName} collection*\n`);
+}
+
+async function resetCurrentID() {
+  const currentIDRef = doc(db, 'votesID', 'currentID');
+  await setDoc(currentIDRef, { currentID: 0 });
+  console.log('*Reset currentID in votesID collection*\n');
 }
 
 async function main() {
   // Clear the users collection
-  await clearUsersCollection();
+  await clearCollection('voteManagers');
+  await clearCollection('usersVotes');
+
+  // Reset currentID in votesID collection
+  await resetCurrentID();
 
   const deployers = await ethers.getSigners();
   const addresses = deployers.slice(0, 5).map(signer => signer.address);
-  //console.log("Addresses of the first five deployers:", addresses);
-  // the last user is me
+  
   for (let i = 0; i < 6; i++) {
     const signer = deployers[i];
     const VotingSystem = await ethers.getContractFactory("VotingSystem", signer);
@@ -54,14 +62,10 @@ async function main() {
     const contractAddress = await votingSystem.getAddress();
     console.log(`Contract deployed!`);
 
-    // const votingSystemArtifactPath = "./artifacts/contracts/VotingSystem.sol/VotingSystem.json";
-    // const votingSystemArtifact = JSON.parse(fs.readFileSync(votingSystemArtifactPath, 'utf8'));
-    // const abi = votingSystemArtifact.bytecode;
-    // need to check if it sppuse to change after each run
     const signerAddressLowercase = signer.address.toLowerCase();
     const contractAddressLowercase = contractAddress.toLowerCase();
 
-    // Create new document in the users collection
+    // Create new document in the voteManagers collection
     const userRef = doc(db, 'voteManagers', signerAddressLowercase);
     await setDoc(userRef, {
       address: signerAddressLowercase,

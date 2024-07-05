@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useMetaMask } from "metamask-react";
 import { ethers } from 'ethers';
 import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
+import { useMetaMask } from "metamask-react";
 import { useNavigate } from 'react-router-dom';
-import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
 import {
   Container,
-  TextField,
+  Typography,
   Table,
   TableBody,
   TableCell,
@@ -17,10 +16,12 @@ import {
   TableRow,
   Paper,
   Button,
-  Typography,
   CircularProgress,
-  Box
+  Box,
+  Card,
+  CardContent
 } from '@mui/material';
+import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
 import { getGroupIdForUser } from '../utils/getGroupIdForUser';
 
 interface Vote {
@@ -35,7 +36,6 @@ const VoteTable = () => {
   const { status, account, ethereum } = useMetaMask();
   const [votes, setVotes] = useState<Vote[]>([]);
   const [contract, setContract] = useState<ethers.Contract | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -86,27 +86,13 @@ const VoteTable = () => {
 
           const [voteIDs, voteNames, startVoteTimes, durations, openStatuses] = result;
 
-          const formattedVotes = voteIDs.map((voteID: ethers.BigNumberish, index: number) => {
-            const startDate = new Date(Number(startVoteTimes[index]) * 1000);
-            const endDate = new Date((Number(startVoteTimes[index]) + Number(durations[index])) * 1000);
-            const isVoteOpen = endDate > new Date();
-
-            const dateFormatter = new Intl.DateTimeFormat('en-GB', {
-              hour: '2-digit',
-              minute: '2-digit',
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric'
-            });
-
-            return {
-              id: voteID.toString(),
-              name: voteNames[index],
-              startDate: dateFormatter.format(startDate),
-              endDate: dateFormatter.format(endDate),
-              status: isVoteOpen,
-            };
-          });
+          const formattedVotes = voteIDs.map((voteID: ethers.BigNumberish, index: number) => ({
+            id: voteID.toString(),
+            name: voteNames[index],
+            startDate: new Date(Number(startVoteTimes[index]) * 1000).toLocaleString(),
+            endDate: new Date((Number(startVoteTimes[index]) + Number(durations[index])) * 1000).toLocaleString(),
+            status: openStatuses[index],
+          }));
 
           setVotes(formattedVotes);
         } catch (error: unknown) {
@@ -124,13 +110,32 @@ const VoteTable = () => {
     fetchVotes();
   }, [contract, account]);
 
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-  };
+  const handleVoteNavigation = async (voteID: string) => {
+    try {
+      if (!contract) {
+        throw new Error("Contract is not loaded.");
+      }
 
-  const filteredVotes = votes.filter(vote =>
-    vote.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      if (!account) {
+        throw new Error("Account is not available.");
+      }
+
+      const hasVoted = await contract.hasVoted(BigInt(voteID), account.toLowerCase());
+      if (hasVoted) {
+        alert('You have already voted in this vote!');
+      } else {
+        navigate(`/voting-component/:${voteID}`);
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('Failed to check voting status:', error.message);
+        setError(error.message);
+      } else {
+        console.error('An unexpected error occurred');
+        setError('An unexpected error occurred');
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -152,60 +157,48 @@ const VoteTable = () => {
   }
 
   return (
-    <Container>
-      {/* <Typography variant="h4" component="h1" gutterBottom>
-        Voting Table
-      </Typography> */}
-      <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-        Voting Table
-      </Typography>
-      <TextField
-        label="Search votes..."
-        variant="outlined"
-        fullWidth
-        margin="normal"
-        value={searchTerm}
-        onChange={handleSearch}
-      />
-      {filteredVotes.length > 0 ? (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Start Date</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>End Date</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Action</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredVotes.map((vote) => (
-                <TableRow key={vote.id}>
-                  <TableCell>{vote.name}</TableCell>
-                  <TableCell>{vote.startDate}</TableCell>
-                  <TableCell>{vote.endDate}</TableCell>
-                  <TableCell>{vote.status ? 'Open' : 'Closed'}</TableCell>
-                  <TableCell>
-                    <Button 
-                      variant="contained" 
-                      color="primary" 
-                      onClick={() => navigate(`/voting-component/:${vote.id}`)}
-                      disabled={!vote.status}
-                    >
-                      Go to Vote
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      ) : (
-        <Typography variant="body1" component="p">
-          No votes available yet :)
-        </Typography>
-      )}
+    <Container maxWidth="lg">
+      <Box mt={4}>
+        <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(173, 216, 230, 0.7)' }}>
+          <CardContent>
+            <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+              Voting Table
+            </Typography>
+            <TableContainer component={Paper} sx={{ backgroundColor: 'rgba(255, 255, 255, 0.7)' }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Vote Name</TableCell>
+                    <TableCell>Start Date</TableCell>
+                    <TableCell>End Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Action</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {votes.map((vote) => (
+                    <TableRow key={vote.id}>
+                      <TableCell>{vote.name}</TableCell>
+                      <TableCell>{vote.startDate}</TableCell>
+                      <TableCell>{vote.endDate}</TableCell>
+                      <TableCell>{vote.status ? 'Open' : 'Closed'}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() => handleVoteNavigation(vote.id)}
+                        >
+                          Go to Vote
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </Box>
     </Container>
   );
 };

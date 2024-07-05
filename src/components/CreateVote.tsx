@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-// import { getAddress } from 'ethers/lib/utils';
 import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useMetaMask } from "metamask-react";
 import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
-import { getCurrentVoteId, fetchAndUpdateVoteId, getUsersByGroupId} from '../utils/fetchAndUpdateVoteId';
+import { getCurrentVoteId, fetchAndUpdateVoteId, getUsersByGroupId } from '../utils/fetchAndUpdateVoteId';
 import {
   Container,
   TextField,
@@ -15,6 +14,10 @@ import {
   CircularProgress,
   Grid,
   Box,
+  Card,
+  CardContent,
+  CardActions,
+  Paper
 } from '@mui/material';
 
 const CreateVote: React.FC = () => {
@@ -35,7 +38,7 @@ const CreateVote: React.FC = () => {
         if (status === "connected" && account) {
           const docRef = doc(db, 'voteManagers', account.toLowerCase()); // Ensure account is lowercase
           const docSnap = await getDoc(docRef);
-          
+
           if (!docSnap.exists()) {
             throw new Error('No contract information available!');
           }
@@ -130,7 +133,7 @@ const CreateVote: React.FC = () => {
       const tx = await contract.createVote(voteID, voteName, startTime, duration, groupID, options);
       await tx.wait();
       console.log(tx);
-      
+
       // Add to usersVotes collection
       const userVotesRef = doc(db, 'usersVotes', account.toLowerCase());
       await setDoc(userVotesRef, { votes: arrayUnion({ voteID, voteName }) }, { merge: true });
@@ -144,6 +147,7 @@ const CreateVote: React.FC = () => {
         console.log(usersInGroup);
         // Convert addresses to checksummed format
         const checksummedAddresses = usersInGroup.map(addr => ethers.getAddress(addr));
+        console.log(checksummedAddresses);
         const txx = await contract.addVoters(voteID, checksummedAddresses, groupID);
         await txx.wait();
         console.log(txx);
@@ -165,87 +169,88 @@ const CreateVote: React.FC = () => {
   return (
     <Container maxWidth="sm">
       <Box mt={4}>
-        {/* <Typography variant="h4" component="h1" gutterBottom>
-          Create New Vote
-        </Typography> */}
-        <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-        Create New Vote
-        </Typography>
-        <Typography variant="h6" component="h2" gutterBottom>
-          {`Vote Identifier - ${voteId}`}
-        </Typography>
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                label="Vote Name"
-                variant="outlined"
-                fullWidth
-                value={voteName}
-                onChange={(e) => setVoteName(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Start Vote Time"
-                type="datetime-local"
-                variant="outlined"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                value={startVoteTime}
-                onChange={(e) => setStartVoteTime(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Vote Duration (days)"
-                type="number"
-                variant="outlined"
-                fullWidth
-                value={voteDuration}
-                onChange={(e) => setVoteDuration(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Group ID"
-                type="number"
-                variant="outlined"
-                fullWidth
-                value={groupId}
-                onChange={(e) => setGroupId(e.target.value)}
-              />
-            </Grid>
-            {voteOptions.map((option, index) => (
-              <Grid item xs={12} key={index}>
-                <TextField
-                  label={`Option ${index + 1}`}
-                  variant="outlined"
-                  fullWidth
-                  value={option}
-                  onChange={(e) => handleOptionChange(index, e.target.value)}
-                />
+        <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(173, 216, 230, 0.7)' }}>
+          <CardContent>
+            <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+              Create New Vote
+            </Typography>
+            <Typography variant="h6" component="h2" gutterBottom>
+              {`Vote Identifier - ${voteId}`}
+            </Typography>
+            <form onSubmit={handleSubmit}>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Vote Name"
+                    variant="outlined"
+                    fullWidth
+                    value={voteName}
+                    onChange={(e) => setVoteName(e.target.value)}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Start Vote Time"
+                    type="datetime-local"
+                    variant="outlined"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    value={startVoteTime}
+                    onChange={(e) => setStartVoteTime(e.target.value)}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Vote Duration (days)"
+                    type="number"
+                    variant="outlined"
+                    fullWidth
+                    value={voteDuration}
+                    onChange={(e) => setVoteDuration(e.target.value)}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Group ID"
+                    type="number"
+                    variant="outlined"
+                    fullWidth
+                    value={groupId}
+                    onChange={(e) => setGroupId(e.target.value)}
+                  />
+                </Grid>
+                {voteOptions.map((option, index) => (
+                  <Grid item xs={12} key={index}>
+                    <TextField
+                      label={`Option ${index + 1}`}
+                      variant="outlined"
+                      fullWidth
+                      value={option}
+                      onChange={(e) => handleOptionChange(index, e.target.value)}
+                    />
+                  </Grid>
+                ))}
+                {voteOptions.length < 10 && (
+                  <Grid item xs={12}>
+                    <Button onClick={addOption} variant="contained" fullWidth>
+                      Add Option
+                    </Button>
+                  </Grid>
+                )}
+                {error && (
+                  <Grid item xs={12}>
+                    <Typography color="error">{error}</Typography>
+                  </Grid>
+                )}
+                <Grid item xs={12}>
+                  <Button type="submit" variant="contained" color="primary" fullWidth>
+                    Create Vote
+                  </Button>
+                </Grid>
               </Grid>
-            ))}
-            {voteOptions.length < 10 && (
-              <Grid item xs={12}>
-                <Button onClick={addOption} variant="contained" fullWidth>
-                  Add Option
-                </Button>
-              </Grid>
-            )}
-            {error && (
-              <Grid item xs={12}>
-                <Typography color="error">{error}</Typography>
-              </Grid>
-            )}
-            <Grid item xs={12}>
-              <Button type="submit" variant="contained" color="primary" fullWidth>
-                Create Vote
-              </Button>
-            </Grid>
-          </Grid>
-        </form>
+            </form>
+          </CardContent>
+        </Card>
       </Box>
     </Container>
   );

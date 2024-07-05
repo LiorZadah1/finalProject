@@ -16,6 +16,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Card,
+  CardContent
 } from '@mui/material';
 
 interface Vote {
@@ -181,49 +183,50 @@ const VotingComponent: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="sm">
+    <Container maxWidth="lg">
       <Box mt={4}>
-        {/* <Typography variant="h4" component="h1" gutterBottom>
-          Cast Your Vote
-        </Typography> */}
-        <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-          Cast your vote
-        </Typography>
-        {vote && (
-          <>
-            <Typography variant="h5" component="h2" gutterBottom>
-              Vote name: {vote.name}
+        <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(173, 216, 230, 0.7)' }}>
+          <CardContent>
+            <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+              Cast your vote
             </Typography>
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="select-option-label">Select Option</InputLabel>
-              <Select
-                labelId="select-option-label"
-                value={selectedOptionIndex !== null ? selectedOptionIndex.toString() : ''}
-                onChange={(e) => setSelectedOptionIndex(Number(e.target.value))}
-              >
-                {vote.options.map((option, index) => (
-                  <MenuItem key={index} value={index}>
-                    {option}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {error && (
-              <Typography color="error" gutterBottom>
-                {error}
-              </Typography>
+            {vote && (
+              <>
+                <Typography variant="h5" component="h2" gutterBottom>
+                  Vote name: {vote.name}
+                </Typography>
+                <FormControl fullWidth margin="normal">
+                  <InputLabel id="select-option-label">Select Option</InputLabel>
+                  <Select
+                    labelId="select-option-label"
+                    value={selectedOptionIndex !== null ? selectedOptionIndex.toString() : ''}
+                    onChange={(e) => setSelectedOptionIndex(Number(e.target.value))}
+                  >
+                    {vote.options.map((option, index) => (
+                      <MenuItem key={index} value={index}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                {error && (
+                  <Typography color="error" gutterBottom>
+                    {error}
+                  </Typography>
+                )}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  onClick={handleVote}
+                  disabled={selectedOptionIndex === null}
+                >
+                  Submit Vote
+                </Button>
+              </>
             )}
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              onClick={handleVote}
-              disabled={selectedOptionIndex === null}
-            >
-              Submit Vote
-            </Button>
-          </>
-        )}
+          </CardContent>
+        </Card>
       </Box>
     </Container>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Typography, Grid, Box, Paper } from '@mui/material';
+import { Container, Typography, Grid, Box, Paper, Card, CardContent } from '@mui/material';
 import UserVotes from './UserVotes';
 import ParticipatedVotes from './ParticipatedVotes';
 import AddVoterAddress from './AddVoterAddress';
@@ -12,44 +12,41 @@ const ManagementComponent: React.FC = () => {
   return (
     <Container maxWidth="lg">
       <Box mt={4}>
-        {/* <Typography variant="h3" component="h1" gutterBottom>
-          Voting Management
-        </Typography> */}
         <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-        Voting Management
+          Voting Management
         </Typography>
         <Grid container spacing={3}>
           {isValidUser && !userLoading && (
             <>
               <Grid item xs={12} sm={6}>
-                <Paper elevation={3}>
-                  <Box p={2}>
+                <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(173, 216, 230, 0.7)' }}>
+                  <CardContent>
                     <AddVoterAddress />
-                  </Box>
-                </Paper>
+                  </CardContent>
+                </Card>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Paper elevation={3}>
-                  <Box p={2}>
+                <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(173, 216, 230, 0.7)' }}>
+                  <CardContent>
                     <UserVotes />
-                  </Box>
-                </Paper>
+                  </CardContent>
+                </Card>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Paper elevation={3}>
-                  <Box p={2}>
+                <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(173, 216, 230, 0.7)' }}>
+                  <CardContent>
                     <UserGroupAddresses />
-                  </Box>
-                </Paper>
+                  </CardContent>
+                </Card>
               </Grid>
             </>
           )}
           <Grid item xs={12} sm={6}>
-            <Paper elevation={3}>
-              <Box p={2}>
+            <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(173, 216, 230, 0.7)' }}>
+              <CardContent>
                 <ParticipatedVotes />
-              </Box>
-            </Paper>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
       </Box>

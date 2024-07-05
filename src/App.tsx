@@ -9,6 +9,7 @@ import VotingComponent from './components/VotingComponent';
 import UserManagement from './components/ManagementComponent';
 import { AppBar, Toolbar, Typography, Button, CircularProgress, Container, Box } from '@mui/material';
 import useCheckUser from './utils/checkUser';
+import './App.css';
 
 const App = () => {
   const { status, connect, account } = useMetaMask();
@@ -135,11 +136,11 @@ const App = () => {
             </Button>
             <Box sx={{ flexGrow: 1 }} />
             <Box>
-              <Button color="inherit" href="/vote-table">Votes Table</Button>
+              <Button color="inherit" href="/vote-table">Voting Table</Button>
               {isValidUser && !userLoading && (
                 <Button color="inherit" href="/create-vote">Create New Vote</Button>
               )}
-              <Button color="inherit" href="/vote-results">Vote Results</Button>
+              <Button color="inherit" href="/vote-results">Votes Result</Button>
               <Button color="inherit" href="/user-management">User Management</Button>
             </Box>
           </Toolbar>

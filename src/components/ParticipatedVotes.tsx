@@ -15,7 +15,9 @@ import {
   TableRow,
   Paper,
   CircularProgress,
-  Box
+  Box,
+  Card,
+  CardContent
 } from '@mui/material';
 import { getGroupIdForUser } from '../utils/getGroupIdForUser';
 import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
@@ -122,35 +124,39 @@ const ParticipatedVotes: React.FC = () => {
 
   return (
     <Container>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Votes I've Participated In
-      </Typography>
-      {votes.length > 0 ? (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Vote ID</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Status</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {votes.map((vote) => (
-                <TableRow key={vote.id}>
-                  <TableCell>{vote.id}</TableCell>
-                  <TableCell>{vote.name}</TableCell>
-                  <TableCell>{vote.status ? 'Open' : 'Closed'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      ) : (
-        <Typography variant="body1" component="p">
-          No votes participated in yet.
-        </Typography>
-      )}
+      <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(255, 255, 255, 0.7)' }}>
+        <CardContent>
+          <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+            Votes I've Participated In
+          </Typography>
+          {votes.length > 0 ? (
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Vote ID</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Name</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {votes.map((vote) => (
+                    <TableRow key={vote.id}>
+                      <TableCell>{vote.id}</TableCell>
+                      <TableCell>{vote.name}</TableCell>
+                      <TableCell>{vote.status ? 'Open' : 'Closed'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Typography variant="body1" component="p">
+              No votes participated in yet.
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
     </Container>
   );
 };

@@ -75,6 +75,18 @@ const ResultsComponent: React.FC = () => {
     return formatDuration(timeLeft);
   };
 
+  const formatDateTime = (timestamp: number): string => {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
   useEffect(() => {
     async function fetchVotes() {
       try {
@@ -215,29 +227,29 @@ const ResultsComponent: React.FC = () => {
         </Typography>
         <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
+            <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(173, 216, 230, 0.7)' }}>
               <CardContent>
-                <Typography variant="h5" component="h2" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                <Typography variant="h5" component="h2" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#000' }}>
                   Open Votes
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <TableContainer component={Paper}>
+                <Divider sx={{ mb: 2, backgroundColor: '#000' }} />
+                <TableContainer component={Paper} sx={{ backgroundColor: 'rgba(255, 255, 255, 0.7)' }}>
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Vote Name</TableCell>
-                        <TableCell>Start Time</TableCell>
-                        <TableCell>Duration</TableCell>
-                        <TableCell>Time Left</TableCell>
-                        <TableCell>Total Votes</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Vote Name</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Start Time</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Duration</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Time Left</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Total Votes</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {openVotes.map(vote => (
                         <TableRow key={vote.id}>
-                          <TableCell>{vote.name}</TableCell>
+                          <TableCell >{vote.name}</TableCell>
                           {vote.startTime !== undefined && (
-                            <TableCell>{new Date(vote.startTime * 1000).toLocaleString()}</TableCell>
+                            <TableCell>{formatDateTime(vote.startTime)}</TableCell>
                           )}
                           {vote.duration !== undefined && (
                             <TableCell>{formatDuration(vote.duration)}</TableCell>
@@ -257,18 +269,18 @@ const ResultsComponent: React.FC = () => {
             </Card>
           </Grid>
           <Grid item xs={12} md={6}>
-            <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
+            <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(173, 216, 230, 0.7)' }}>
               <CardContent>
-                <Typography variant="h5" component="h2" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                <Typography variant="h5" component="h2" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#000' }}>
                   Closed Votes
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
+                <Divider sx={{ mb: 2, backgroundColor: '#000' }} />
                 {closedVotes.map(vote => (
-                  <Paper key={vote.id} elevation={3} style={{ margin: '10px 0', padding: '10px' }}>
+                  <Paper key={vote.id} elevation={3} style={{ margin: '10px 0', padding: '10px', backgroundColor: 'rgba(255, 255, 255, 0.7)' }}>
                     <Typography variant="h6" sx={{ color: '#1976d2' }}>Vote ID: {vote.id}</Typography>
                     <Typography variant="body1" sx={{ color: '#555' }}>Vote Name: {vote.name}</Typography>
                     {vote.startTime !== undefined && (
-                      <Typography variant="body2" sx={{ color: '#777' }}>Start Time: {new Date(vote.startTime * 1000).toLocaleString()}</Typography>
+                      <Typography variant="body2" sx={{ color: '#777' }}>Start Time: {formatDateTime(vote.startTime)}</Typography>
                     )}
                     {vote.duration !== undefined && (
                       <Typography variant="body2" sx={{ color: '#777' }}>Duration: {formatDuration(vote.duration)}</Typography>
@@ -279,7 +291,7 @@ const ResultsComponent: React.FC = () => {
                     {vote.options && (
                       <Box mt={2}>
                         <Typography variant="body2" component="div" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                          Winner Option: {vote.options.sort((a, b) => b.count - a.count)[0].name}
+                          Selected Option: {vote.options.sort((a, b) => b.count - a.count)[0].name}
                         </Typography>
                         <DropdownOptions options={vote.options} voteId={vote.id} />
                       </Box>
@@ -311,7 +323,7 @@ const DropdownOptions: React.FC<DropdownOptionsProps> = ({ options, voteId }) =>
         </IconButton>
       </CardActions>
       <Collapse in={open}>
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{ backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
           <Table>
             <TableHead>
               <TableRow>

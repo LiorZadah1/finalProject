@@ -14,6 +14,8 @@ import {
   Paper,
   CircularProgress,
   Box,
+  Card,
+  CardContent
 } from '@mui/material';
 
 interface Vote {
@@ -83,33 +85,37 @@ const UserVotes: React.FC = () => {
 
   return (
     <Container>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Votes Created By Me
-      </Typography>
-      {votes.length > 0 ? (
-        <TableContainer component={Paper} style={{ marginTop: '20px' }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Vote ID</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Vote Name</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {votes.map((vote) => (
-                <TableRow key={vote.voteID}>
-                  <TableCell>{vote.voteID}</TableCell>
-                  <TableCell>{vote.voteName}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      ) : (
-        <Typography variant="body1" component="p">
-          No votes created yet.
-        </Typography>
-      )}
+      <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(255, 255, 255, 0.7)' }}>
+        <CardContent>
+          <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+            Votes Created By Me
+          </Typography>
+          {votes.length > 0 ? (
+            <TableContainer component={Paper} style={{ marginTop: '20px' }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Vote ID</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Vote Name</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {votes.map((vote) => (
+                    <TableRow key={vote.voteID}>
+                      <TableCell>{vote.voteID}</TableCell>
+                      <TableCell>{vote.voteName}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Typography variant="body1" component="p">
+              No votes created yet.
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
     </Container>
   );
 };
