@@ -153,7 +153,10 @@ const VoteTable = () => {
 
   return (
     <Container>
-      <Typography variant="h4" component="h1" gutterBottom>
+      {/* <Typography variant="h4" component="h1" gutterBottom>
+        Voting Table
+      </Typography> */}
+      <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
         Voting Table
       </Typography>
       <TextField

@@ -165,8 +165,11 @@ const CreateVote: React.FC = () => {
   return (
     <Container maxWidth="sm">
       <Box mt={4}>
-        <Typography variant="h4" component="h1" gutterBottom>
+        {/* <Typography variant="h4" component="h1" gutterBottom>
           Create New Vote
+        </Typography> */}
+        <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+        Create New Vote
         </Typography>
         <Typography variant="h6" component="h2" gutterBottom>
           {`Vote Identifier - ${voteId}`}

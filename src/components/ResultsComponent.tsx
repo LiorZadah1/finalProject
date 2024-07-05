@@ -13,8 +13,17 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
+  Grid,
+  IconButton,
+  Collapse,
+  Card,
+  CardContent,
+  CardActions,
+  Divider
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { db } from '../firebaseConfig';
 import { createContract } from '../utils/createContract';
 import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
@@ -26,6 +35,7 @@ interface Vote {
   duration?: number;
   isOpen?: boolean;
   options?: { name: string; count: number }[];
+  timeLeft?: string;
 }
 
 const ResultsComponent: React.FC = () => {
@@ -34,6 +44,36 @@ const ResultsComponent: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { status, account } = useMetaMask();
   const [contract, setContract] = useState<ethers.Contract | null>(null);
+
+  const formatDuration = (seconds: number): string => {
+    const units = [
+      { label: 'day', value: 86400 },
+      { label: 'hour', value: 3600 },
+      { label: 'minute', value: 60 },
+      { label: 'second', value: 1 },
+    ];
+
+    for (const unit of units) {
+      const quotient = Math.floor(seconds / unit.value);
+      if (quotient > 0) {
+        return quotient === 1 ? `1 ${unit.label}` : `${quotient} ${unit.label}s`;
+      }
+    }
+
+    return '0 seconds';
+  };
+
+  const calculateTimeLeft = (startTime: number, duration: number): string => {
+    const currentTime = Math.floor(Date.now() / 1000);
+    const endTime = startTime + duration;
+    const timeLeft = endTime - currentTime;
+
+    if (timeLeft <= 0) {
+      return 'Vote ended';
+    }
+
+    return formatDuration(timeLeft);
+  };
 
   useEffect(() => {
     async function fetchVotes() {
@@ -79,11 +119,18 @@ const ResultsComponent: React.FC = () => {
           })
         );
         console.log(`Details for vote ${voteID}:`, voteDetails, options);
+
+        const startTime = Number(voteDetails.startVoteTime);
+        const duration = Number(voteDetails.duration);
+        const isOpen = voteDetails.open && (Date.now() / 1000 < startTime + duration);
+        const timeLeft = calculateTimeLeft(startTime, duration);
+
         return {
-          startTime: Number(voteDetails.startVoteTime), // Convert BigInt to Number
-          duration: Number(voteDetails.duration), // Convert BigInt to Number
-          isOpen: voteDetails.open,
+          startTime,
+          duration,
+          isOpen,
           options,
+          timeLeft,
         };
       } catch (error) {
         console.error(`Failed to fetch details for vote ${voteID}:`, error);
@@ -157,54 +204,135 @@ const ResultsComponent: React.FC = () => {
     );
   }
 
+  const openVotes = votes.filter(vote => vote.isOpen);
+  const closedVotes = votes.filter(vote => !vote.isOpen);
+
   return (
     <Container maxWidth="lg">
       <Box mt={4}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          User Votes
+        <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+          Votes Result
         </Typography>
-        <Box>
-          {votes.map(vote => (
-            <Paper key={vote.id} elevation={3} style={{ margin: '10px 0', padding: '10px' }}>
-              <Typography variant="h6">Vote ID: {vote.id}</Typography>
-              <Typography variant="body1">Vote Name: {vote.name}</Typography>
-              {vote.startTime !== undefined && (
-                <Typography variant="body2">Start Time: {new Date(vote.startTime * 1000).toLocaleString()}</Typography>
-              )}
-              {vote.duration !== undefined && (
-                <Typography variant="body2">Duration: {vote.duration} seconds</Typography>
-              )}
-              {vote.isOpen !== undefined && (
-                <Typography variant="body2">Status: {vote.isOpen ? 'Open' : 'Closed'}</Typography>
-              )}
-              {vote.options && (
-                <Box mt={2}>
-                  <Typography variant="body2" component="div">Options:</Typography>
-                  <TableContainer component={Paper}>
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Option Name</TableCell>
-                          <TableCell>Vote Count</TableCell>
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={6}>
+            <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
+              <CardContent>
+                <Typography variant="h5" component="h2" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                  Open Votes
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Vote Name</TableCell>
+                        <TableCell>Start Time</TableCell>
+                        <TableCell>Duration</TableCell>
+                        <TableCell>Time Left</TableCell>
+                        <TableCell>Total Votes</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {openVotes.map(vote => (
+                        <TableRow key={vote.id}>
+                          <TableCell>{vote.name}</TableCell>
+                          {vote.startTime !== undefined && (
+                            <TableCell>{new Date(vote.startTime * 1000).toLocaleString()}</TableCell>
+                          )}
+                          {vote.duration !== undefined && (
+                            <TableCell>{formatDuration(vote.duration)}</TableCell>
+                          )}
+                          {vote.timeLeft && (
+                            <TableCell>{vote.timeLeft}</TableCell>
+                          )}
+                          <TableCell>
+                            {vote.options?.reduce((total, option) => total + option.count, 0)}
+                          </TableCell>
                         </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {vote.options.map((option, index) => (
-                          <TableRow key={`${vote.id}-${index}`}>
-                            <TableCell>{option.name}</TableCell>
-                            <TableCell>{option.count}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Box>
-              )}
-            </Paper>
-          ))}
-        </Box>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
+              <CardContent>
+                <Typography variant="h5" component="h2" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                  Closed Votes
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                {closedVotes.map(vote => (
+                  <Paper key={vote.id} elevation={3} style={{ margin: '10px 0', padding: '10px' }}>
+                    <Typography variant="h6" sx={{ color: '#1976d2' }}>Vote ID: {vote.id}</Typography>
+                    <Typography variant="body1" sx={{ color: '#555' }}>Vote Name: {vote.name}</Typography>
+                    {vote.startTime !== undefined && (
+                      <Typography variant="body2" sx={{ color: '#777' }}>Start Time: {new Date(vote.startTime * 1000).toLocaleString()}</Typography>
+                    )}
+                    {vote.duration !== undefined && (
+                      <Typography variant="body2" sx={{ color: '#777' }}>Duration: {formatDuration(vote.duration)}</Typography>
+                    )}
+                    {vote.isOpen !== undefined && (
+                      <Typography variant="body2" sx={{ color: '#777' }}>Status: {vote.isOpen ? 'Open' : 'Closed'}</Typography>
+                    )}
+                    {vote.options && (
+                      <Box mt={2}>
+                        <Typography variant="body2" component="div" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                          Winner Option: {vote.options.sort((a, b) => b.count - a.count)[0].name}
+                        </Typography>
+                        <DropdownOptions options={vote.options} voteId={vote.id} />
+                      </Box>
+                    )}
+                  </Paper>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       </Box>
     </Container>
+  );
+};
+
+interface DropdownOptionsProps {
+  options: { name: string; count: number }[];
+  voteId: number;
+}
+
+const DropdownOptions: React.FC<DropdownOptionsProps> = ({ options, voteId }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <CardActions>
+        <IconButton onClick={() => setOpen(!open)} sx={{ color: '#1976d2' }}>
+          {open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+        </IconButton>
+      </CardActions>
+      <Collapse in={open}>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Option Name</TableCell>
+                <TableCell>Vote Count</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {options
+                .sort((a, b) => b.count - a.count)
+                .map((option, index) => (
+                  <TableRow key={`${voteId}-${index}`}>
+                    <TableCell>{option.name}</TableCell>
+                    <TableCell>{option.count}</TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Collapse>
+    </>
   );
 };
 

@@ -12,8 +12,11 @@ const ManagementComponent: React.FC = () => {
   return (
     <Container maxWidth="lg">
       <Box mt={4}>
-        <Typography variant="h3" component="h1" gutterBottom>
+        {/* <Typography variant="h3" component="h1" gutterBottom>
           Voting Management
+        </Typography> */}
+        <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+        Voting Management
         </Typography>
         <Grid container spacing={3}>
           {isValidUser && !userLoading && (

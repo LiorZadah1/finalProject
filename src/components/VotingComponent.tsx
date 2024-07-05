@@ -183,13 +183,16 @@ const VotingComponent: React.FC = () => {
   return (
     <Container maxWidth="sm">
       <Box mt={4}>
-        <Typography variant="h4" component="h1" gutterBottom>
+        {/* <Typography variant="h4" component="h1" gutterBottom>
           Cast Your Vote
+        </Typography> */}
+        <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+          Cast your vote
         </Typography>
         {vote && (
           <>
             <Typography variant="h5" component="h2" gutterBottom>
-              {vote.name}
+              Vote name: {vote.name}
             </Typography>
             <FormControl fullWidth margin="normal">
               <InputLabel id="select-option-label">Select Option</InputLabel>
