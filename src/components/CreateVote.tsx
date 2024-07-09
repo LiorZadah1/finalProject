@@ -16,8 +16,10 @@ import {
   Box,
   Card,
   CardContent,
-  CardActions,
-  Paper
+  MenuItem,
+  FormControl,
+  Select,
+  InputLabel,
 } from '@mui/material';
 
 const CreateVote: React.FC = () => {
@@ -26,7 +28,8 @@ const CreateVote: React.FC = () => {
   const [startVoteTime, setStartVoteTime] = useState('');
   const [voteDuration, setVoteDuration] = useState('');
   const [groupId, setGroupId] = useState('');
-  const [voteOptions, setVoteOptions] = useState(['']);
+  const [availableGroups, setAvailableGroups] = useState<string[]>([]);
+  const [voteOptions, setVoteOptions] = useState(['', '']); // Initialize with two empty options
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [voteId, setVoteId] = useState<number | null>(null); // State for vote ID
@@ -43,7 +46,7 @@ const CreateVote: React.FC = () => {
             throw new Error('No contract information available!');
           }
 
-          const { contractAddress } = docSnap.data();
+          const { contractAddress, group } = docSnap.data();
           const abi = VotingSystem.abi;
           if (window.ethereum) {
             const contractInstance = await createContract(window.ethereum, contractAddress, abi);
@@ -52,6 +55,9 @@ const CreateVote: React.FC = () => {
             // Fetch the current vote ID
             const currentVoteId = await getCurrentVoteId();
             setVoteId(currentVoteId);
+
+            // Set available groups
+            setAvailableGroups(Object.keys(group));
           } else {
             throw new Error('Ethereum object is not available.');
           }
@@ -108,7 +114,7 @@ const CreateVote: React.FC = () => {
     setStartVoteTime('');
     setVoteDuration('');
     setGroupId('');
-    setVoteOptions(['']);
+    setVoteOptions(['', '']); // Reset to two empty options
     //setVoteId(null);
   };
 
@@ -166,6 +172,8 @@ const CreateVote: React.FC = () => {
     }
   };
 
+  const minStartDate = new Date().toISOString().slice(0, 16);
+
   return (
     <Container maxWidth="sm">
       <Box mt={4}>
@@ -195,6 +203,7 @@ const CreateVote: React.FC = () => {
                     variant="outlined"
                     fullWidth
                     InputLabelProps={{ shrink: true }}
+                    inputProps={{ min: minStartDate }}
                     value={startVoteTime}
                     onChange={(e) => setStartVoteTime(e.target.value)}
                   />
@@ -205,19 +214,27 @@ const CreateVote: React.FC = () => {
                     type="number"
                     variant="outlined"
                     fullWidth
+                    inputProps={{ min: "1" }} // Ensure duration can't be decreased below 1
                     value={voteDuration}
                     onChange={(e) => setVoteDuration(e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField
-                    label="Group ID"
-                    type="number"
-                    variant="outlined"
-                    fullWidth
-                    value={groupId}
-                    onChange={(e) => setGroupId(e.target.value)}
-                  />
+                  <FormControl variant="outlined" fullWidth>
+                    <InputLabel id="group-select-label">Group ID</InputLabel>
+                    <Select
+                      labelId="group-select-label"
+                      value={groupId}
+                      onChange={(e) => setGroupId(e.target.value as string)}
+                      label="Group ID"
+                    >
+                      {availableGroups.map((group) => (
+                        <MenuItem key={group} value={group}>
+                          {group}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
                 {voteOptions.map((option, index) => (
                   <Grid item xs={12} key={index}>

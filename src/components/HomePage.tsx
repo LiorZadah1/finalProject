@@ -34,7 +34,7 @@ const HomePage: React.FC<HomePageProps> = ({ status, account, connect }) => {
       <Box display="flex" justifyContent="center">
         <Grid container spacing={4} justifyContent="center" sx={{ marginTop: '20px' }}>
           <Grid item xs={12} sm={6} md={6}>
-            <Box onClick={() => navigate('/voting-component')} sx={{ cursor: 'pointer', backgroundColor: '#3f51b5', borderRadius: '8px' }}>
+            <Box onClick={() => navigate('/vote-table')} sx={{ cursor: 'pointer', backgroundColor: '#3f51b5', borderRadius: '8px' }}>
               <Card sx={{ backgroundColor: 'inherit', color: '#fff' }}>
                 <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Typography variant="h5" component="h2">

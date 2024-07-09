@@ -5,7 +5,11 @@ import { Container, TextField, Button, Typography, Box, Grid, Card, CardContent 
 import { useMetaMask } from "metamask-react";
 import useCheckUser from '../utils/checkUser';
 
-const AddVoterAddress: React.FC = () => {
+interface AddVoterAddressProps {
+  onRefresh: () => void;
+}
+
+const AddVoterAddress: React.FC<AddVoterAddressProps> = ({ onRefresh }) => {
   const { account } = useMetaMask();
   const [groupId, setGroupId] = useState('');
   const [voterAddress, setVoterAddress] = useState('');
@@ -31,6 +35,7 @@ const AddVoterAddress: React.FC = () => {
       setMessage('Voter address added successfully');
       resetForm();
       setError(null);
+      onRefresh(); // Trigger refresh in parent component
     } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message);

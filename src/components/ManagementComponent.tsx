@@ -1,5 +1,5 @@
-import React from 'react';
-import { Container, Typography, Grid, Box, Paper, Card, CardContent } from '@mui/material';
+import React, { useState } from 'react';
+import { Container, Typography, Grid, Box, Card, CardContent } from '@mui/material';
 import UserVotes from './UserVotes';
 import ParticipatedVotes from './ParticipatedVotes';
 import AddVoterAddress from './AddVoterAddress';
@@ -8,6 +8,11 @@ import UserGroupAddresses from './UserGroupAddresses';
 
 const ManagementComponent: React.FC = () => {
   const [isValidUser, userLoading] = useCheckUser();
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = () => {
+    setRefreshKey((prevKey) => prevKey + 1);
+  };
 
   return (
     <Container maxWidth="lg">
@@ -21,7 +26,7 @@ const ManagementComponent: React.FC = () => {
               <Grid item xs={12} sm={6}>
                 <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(173, 216, 230, 0.7)' }}>
                   <CardContent>
-                    <AddVoterAddress />
+                    <AddVoterAddress onRefresh={handleRefresh} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -35,7 +40,7 @@ const ManagementComponent: React.FC = () => {
               <Grid item xs={12} sm={6}>
                 <Card sx={{ borderRadius: 3, boxShadow: 3, backgroundColor: 'rgba(173, 216, 230, 0.7)' }}>
                   <CardContent>
-                    <UserGroupAddresses />
+                    <UserGroupAddresses key={refreshKey} />
                   </CardContent>
                 </Card>
               </Grid>

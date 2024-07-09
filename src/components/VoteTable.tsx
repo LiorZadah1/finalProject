@@ -86,13 +86,19 @@ const VoteTable = () => {
 
           const [voteIDs, voteNames, startVoteTimes, durations, openStatuses] = result;
 
-          const formattedVotes = voteIDs.map((voteID: ethers.BigNumberish, index: number) => ({
-            id: voteID.toString(),
-            name: voteNames[index],
-            startDate: new Date(Number(startVoteTimes[index]) * 1000).toLocaleString(),
-            endDate: new Date((Number(startVoteTimes[index]) + Number(durations[index])) * 1000).toLocaleString(),
-            status: openStatuses[index],
-          }));
+          const formattedVotes = voteIDs.map((voteID: ethers.BigNumberish, index: number) => {
+            const startDate = new Date(Number(startVoteTimes[index]) * 1000);
+            const endDate = new Date((Number(startVoteTimes[index]) + Number(durations[index])) * 1000);
+            const currentTime = new Date();
+
+            return {
+              id: voteID.toString(),
+              name: voteNames[index],
+              startDate: startDate.toLocaleString(),
+              endDate: endDate.toLocaleString(),
+              status: openStatuses[index] && currentTime < endDate,
+            };
+          });
 
           setVotes(formattedVotes);
         } catch (error: unknown) {
@@ -187,6 +193,7 @@ const VoteTable = () => {
                           variant="contained"
                           color="primary"
                           onClick={() => handleVoteNavigation(vote.id)}
+                          disabled={!vote.status} // Disable button if vote is closed
                         >
                           Go to Vote
                         </Button>

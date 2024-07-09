@@ -5,7 +5,7 @@ import { db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { createContract } from '../utils/createContract';
 import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -37,6 +37,7 @@ const VotingComponent: React.FC = () => {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -152,6 +153,7 @@ const VotingComponent: React.FC = () => {
 
       await tx.wait();
       alert('Vote successfully cast!');
+      navigate('/vote-results'); // Redirect to results component
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error('Failed to cast vote:', error.message);

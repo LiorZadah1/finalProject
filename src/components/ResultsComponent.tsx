@@ -36,6 +36,7 @@ interface Vote {
   isOpen?: boolean;
   options?: { name: string; count: number }[];
   timeLeft?: string;
+  endTime?: number;
 }
 
 const ResultsComponent: React.FC = () => {
@@ -136,6 +137,7 @@ const ResultsComponent: React.FC = () => {
         const duration = Number(voteDetails.duration);
         const isOpen = voteDetails.open && (Date.now() / 1000 < startTime + duration);
         const timeLeft = calculateTimeLeft(startTime, duration);
+        const endTime = startTime + duration; // Calculate the end time
 
         return {
           startTime,
@@ -143,6 +145,7 @@ const ResultsComponent: React.FC = () => {
           isOpen,
           options,
           timeLeft,
+          endTime, // Add endTime to the returned details
         };
       } catch (error) {
         console.error(`Failed to fetch details for vote ${voteID}:`, error);
@@ -247,7 +250,7 @@ const ResultsComponent: React.FC = () => {
                     <TableBody>
                       {openVotes.map(vote => (
                         <TableRow key={vote.id}>
-                          <TableCell >{vote.name}</TableCell>
+                          <TableCell>{vote.name}</TableCell>
                           {vote.startTime !== undefined && (
                             <TableCell>{formatDateTime(vote.startTime)}</TableCell>
                           )}
@@ -279,14 +282,8 @@ const ResultsComponent: React.FC = () => {
                   <Paper key={vote.id} elevation={3} style={{ margin: '10px 0', padding: '10px', backgroundColor: 'rgba(255, 255, 255, 0.7)' }}>
                     <Typography variant="h6" sx={{ color: '#1976d2' }}>Vote ID: {vote.id}</Typography>
                     <Typography variant="body1" sx={{ color: '#555' }}>Vote Name: {vote.name}</Typography>
-                    {vote.startTime !== undefined && (
-                      <Typography variant="body2" sx={{ color: '#777' }}>Start Time: {formatDateTime(vote.startTime)}</Typography>
-                    )}
-                    {vote.duration !== undefined && (
-                      <Typography variant="body2" sx={{ color: '#777' }}>Duration: {formatDuration(vote.duration)}</Typography>
-                    )}
-                    {vote.isOpen !== undefined && (
-                      <Typography variant="body2" sx={{ color: '#777' }}>Status: {vote.isOpen ? 'Open' : 'Closed'}</Typography>
+                    {vote.endTime !== undefined && (
+                      <Typography variant="body2" sx={{ color: '#777' }}>End Time: {formatDateTime(vote.endTime)}</Typography>
                     )}
                     {vote.options && (
                       <Box mt={2}>
