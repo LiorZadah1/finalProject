@@ -141,7 +141,9 @@ const App = () => {
                 <Button color="inherit" href="/create-vote">Create New Vote</Button>
               )}
               <Button color="inherit" href="/vote-results">Votes Result</Button>
+              {isValidUser && !userLoading && (
               <Button color="inherit" href="/user-management">User Management</Button>
+              )}
             </Box>
           </Toolbar>
         </AppBar>

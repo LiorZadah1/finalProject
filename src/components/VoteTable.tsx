@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
@@ -23,6 +23,8 @@ import {
 } from '@mui/material';
 import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
 import { getGroupIdForUser } from '../utils/getGroupIdForUser';
+import useCheckUser from '../utils/checkUser';
+import useFetchUserDetails from '../hooks/useFetchUserDetails';
 
 interface Vote {
   id: string;
@@ -38,22 +40,31 @@ const VoteTable = () => {
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isValidUser, userLoading] = useCheckUser();
+  const [userDetails, userDetailsLoading, userDetailsError] = useFetchUserDetails(account || '');
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchContractDetails = async () => {
-      if (status === "connected" && account) {
-        try {        
-          const docRef = doc(db, 'voteManagers', account.toLowerCase());
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            const abi = VotingSystem.abi;
-            const { contractAddress } = docSnap.data();
-            if (ethereum) {
-              const contractInstance = await createContract(ethereum, contractAddress, abi);
-              setContract(contractInstance);
-              console.log("Contract instance created successfully:", contractInstance);
+      if (status === "connected" && account && !userLoading && !userDetailsLoading) {
+        try {
+          let contractAddress: string | null = null;
+
+          if (isValidUser) {
+            const docRef = doc(db, 'voteManagers', account.toLowerCase());
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              contractAddress = docSnap.data().contractAddress;
             }
+          } else if (userDetails) {
+            contractAddress = userDetails.contractAddress;
+          }
+
+          if (contractAddress && ethereum) {
+            const abi = VotingSystem.abi;
+            const contractInstance = await createContract(ethereum, contractAddress, abi);
+            setContract(contractInstance);
+            console.log("Contract instance created successfully:", contractInstance);
           } else {
             throw new Error("Contract details not found!");
           }
@@ -71,8 +82,10 @@ const VoteTable = () => {
       }
     };
 
-    fetchContractDetails();
-  }, [status, account, ethereum]);
+    if (!userLoading && !userDetailsLoading) {
+      fetchContractDetails();
+    }
+  }, [status, account, ethereum, isValidUser, userLoading, userDetails, userDetailsLoading]);
 
   useEffect(() => {
     const fetchVotes = async () => {
@@ -143,7 +156,7 @@ const VoteTable = () => {
     }
   };
 
-  if (loading) {
+  if (loading || userLoading || userDetailsLoading) {
     return (
       <Container>
         <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
@@ -154,10 +167,10 @@ const VoteTable = () => {
     );
   }
 
-  if (error) {
+  if (error || userDetailsError) {
     return (
       <Container>
-        <Typography color="error">{error}</Typography>
+        <Typography color="error">{error || userDetailsError}</Typography>
       </Container>
     );
   }

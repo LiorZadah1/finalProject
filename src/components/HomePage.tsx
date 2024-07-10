@@ -77,7 +77,7 @@ const HomePage: React.FC<HomePageProps> = ({ status, account, connect }) => {
               </Card>
             </Box>
           </Grid>
-
+          {isValidUser && !userLoading && (
           <Grid item xs={12} sm={6} md={6}>
             <Box onClick={() => navigate('/user-management')} sx={{ cursor: 'pointer', backgroundColor: '#3f51b5', borderRadius: '8px' }}>
               <Card sx={{ backgroundColor: 'inherit', color: '#fff' }}>
@@ -92,6 +92,7 @@ const HomePage: React.FC<HomePageProps> = ({ status, account, connect }) => {
               </Card>
             </Box>
           </Grid>
+          )}
         </Grid>
       </Box>
     </Container>

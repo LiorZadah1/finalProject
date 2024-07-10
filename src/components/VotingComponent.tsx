@@ -19,6 +19,8 @@ import {
   Card,
   CardContent
 } from '@mui/material';
+import useCheckUser from '../utils/checkUser';
+import useFetchUserDetails from '../hooks/useFetchUserDetails';
 
 interface Vote {
   id: string;
@@ -37,41 +39,52 @@ const VotingComponent: React.FC = () => {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isValidUser, userLoading] = useCheckUser();
+  const [userDetails, userDetailsLoading, userDetailsError] = useFetchUserDetails(account || '');
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (status === "connected" && account) {
-          const docRef = doc(db, 'voteManagers', account.toLowerCase());
-          const docSnap = await getDoc(docRef);
-          if (!docSnap.exists()) {
-            throw new Error('No contract information available!');
+    const fetchContractDetails = async () => {
+      if (status === "connected" && account && !userLoading && !userDetailsLoading) {
+        try {
+          let contractAddress: string | null = null;
+
+          if (isValidUser) {
+            const docRef = doc(db, 'voteManagers', account.toLowerCase());
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              contractAddress = docSnap.data().contractAddress;
+            }
+          } else if (userDetails) {
+            contractAddress = userDetails.contractAddress;
           }
-          const { contractAddress } = docSnap.data();
-          const abi = VotingSystem.abi;
-          if (window.ethereum) {
+
+          if (contractAddress && window.ethereum) {
+            const abi = VotingSystem.abi;
             const contractInstance = await createContract(window.ethereum, contractAddress, abi);
             setContract(contractInstance);
+            console.log("Contract instance created successfully:", contractInstance);
           } else {
-            throw new Error('Ethereum object is not available.');
+            throw new Error("Contract details not found!");
           }
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            console.error('Failed to load contract:', error.message);
+            setError(error.message);
+          } else {
+            console.error('An unexpected error occurred');
+            setError('An unexpected error occurred');
+          }
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error('Failed to load contract:', error.message);
-          setError(error.message);
-        } else {
-          console.error('An unexpected error occurred');
-          setError('An unexpected error occurred');
-        }
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    fetchData();
-  }, [status, account]);
+    if (!userLoading && !userDetailsLoading) {
+      fetchContractDetails();
+    }
+  }, [status, account, isValidUser, userLoading, userDetails, userDetailsLoading]);
 
   useEffect(() => {
     const fetchVote = async () => {
@@ -165,7 +178,7 @@ const VotingComponent: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || userLoading || userDetailsLoading) {
     return (
       <Container>
         <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
@@ -176,10 +189,10 @@ const VotingComponent: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error || userDetailsError) {
     return (
       <Container>
-        <Typography color="error">{error}</Typography>
+        <Typography color="error">{error || userDetailsError}</Typography>
       </Container>
     );
   }

@@ -27,6 +27,8 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { db } from '../firebaseConfig';
 import { createContract } from '../utils/createContract';
 import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
+import useCheckUser from '../utils/checkUser';
+import useFetchUserDetails from '../hooks/useFetchUserDetails';
 
 interface Vote {
   id: number;
@@ -45,6 +47,8 @@ const ResultsComponent: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { status, account } = useMetaMask();
   const [contract, setContract] = useState<ethers.Contract | null>(null);
+  const [isValidUser, userLoading] = useCheckUser();
+  const [userDetails, userDetailsLoading, userDetailsError] = useFetchUserDetails(account || '');
 
   const formatDuration = (seconds: number): string => {
     const units = [
@@ -89,118 +93,109 @@ const ResultsComponent: React.FC = () => {
   };
 
   useEffect(() => {
-    async function fetchVotes() {
-      try {
-        if (status === "connected" && account) {
-          console.log('Fetching votes for user:', account);
-          const docRef = doc(db, 'usersVotes', account.toLowerCase());
-          const docSnap = await getDoc(docRef);
+    const fetchContractDetails = async () => {
+      if (status === "connected" && account && !userLoading && !userDetailsLoading) {
+        try {
+          let contractAddress: string | null = null;
+          let managerAddress: string | null = null;
 
-          if (docSnap.exists()) {
-            const userVotes = docSnap.data().votes as { voteID: number; voteName: string }[];
-            const votesData = userVotes.map(vote => ({
-              id: vote.voteID,
-              name: vote.voteName
-            }));
-            console.log('User votes:', votesData);
-            setVotes(votesData);
-            return votesData; // Return votesData to be used in fetchVoteDetails
-          } else {
-            throw new Error('No votes found for this user.');
-          }
-        }
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error('Failed to fetch votes:', error.message);
-          setError(error.message);
-        } else {
-          console.error('An unexpected error occurred');
-          setError('An unexpected error occurred');
-        }
-      }
-      return [];
-    }
-
-    async function fetchVoteDetails(contractInstance: ethers.Contract, voteID: number) {
-      try {
-        console.log(`Fetching details for vote ${voteID}...`);
-        const voteDetails = await contractInstance.getVote(voteID);
-        const options = await Promise.all(
-          [...Array(Number(voteDetails.optionsCount)).keys()].map(async (index) => {
-            const [optionName, countOption] = await contractInstance.getOptionDetails(voteID, index);
-            return { name: optionName, count: Number(countOption) };
-          })
-        );
-        console.log(`Details for vote ${voteID}:`, voteDetails, options);
-
-        const startTime = Number(voteDetails.startVoteTime);
-        const duration = Number(voteDetails.duration);
-        const isOpen = voteDetails.open && (Date.now() / 1000 < startTime + duration);
-        const timeLeft = calculateTimeLeft(startTime, duration);
-        const endTime = startTime + duration; // Calculate the end time
-
-        return {
-          startTime,
-          duration,
-          isOpen,
-          options,
-          timeLeft,
-          endTime, // Add endTime to the returned details
-        };
-      } catch (error) {
-        console.error(`Failed to fetch details for vote ${voteID}:`, error);
-        return null;
-      }
-    }
-
-    async function fetchData() {
-      try {
-        if (status === "connected" && account) {
-          console.log('Fetching contract details...');
-          const docRef = doc(db, 'voteManagers', account.toLowerCase());
-          const docSnap = await getDoc(docRef);
-
-          if (!docSnap.exists()) {
-            throw new Error('No contract information available!');
+          if (isValidUser) {
+            const docRef = doc(db, 'voteManagers', account.toLowerCase());
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              contractAddress = docSnap.data().contractAddress;
+              managerAddress = account.toLowerCase();
+            }
+          } else if (userDetails) {
+            contractAddress = userDetails.contractAddress;
+            managerAddress = userDetails.address;
           }
 
-          const { contractAddress } = docSnap.data();
-          const abi = VotingSystem.abi;
-          if (window.ethereum) {
+          if (contractAddress && managerAddress && window.ethereum) {
+            const abi = VotingSystem.abi;
             const contractInstance = await createContract(window.ethereum, contractAddress, abi);
             setContract(contractInstance);
+            console.log("Contract instance created successfully:", contractInstance);
 
-            const userVotes = await fetchVotes();
+            // Fetch votes for the manager's address
+            const docRef = doc(db, 'usersVotes', managerAddress);
+            const docSnap = await getDoc(docRef);
 
-            const updatedVotes = await Promise.all(
-              userVotes.map(async vote => {
-                const details = await fetchVoteDetails(contractInstance, vote.id);
-                return details ? { ...vote, ...details } : vote;
-              })
-            );
-            console.log('Updated votes with details:', updatedVotes);
-            setVotes(updatedVotes);
+            if (docSnap.exists()) {
+              const userVotes = docSnap.data().votes as { voteID: number; voteName: string }[];
+              console.log('User votes from Firestore:', userVotes);
+
+              const votesData = userVotes.map(vote => ({
+                id: vote.voteID,
+                name: vote.voteName
+              }));
+              console.log('Formatted user votes:', votesData);
+
+              const updatedVotes = await Promise.all(
+                votesData.map(async vote => {
+                  const voteDetails = await contractInstance.getVote(vote.id);
+                  const options = await Promise.all(
+                    [...Array(Number(voteDetails.optionsCount)).keys()].map(async (index) => {
+                      const [optionName, countOption] = await contractInstance.getOptionDetails(vote.id, index);
+                      return { name: optionName, count: Number(countOption) };
+                    })
+                  );
+
+                  const startTime = Number(voteDetails.startVoteTime);
+                  const duration = Number(voteDetails.duration);
+                  const isOpen = voteDetails.open && (Date.now() / 1000 < startTime + duration);
+                  const timeLeft = calculateTimeLeft(startTime, duration);
+                  const endTime = startTime + duration;
+
+                  console.log(`Vote details for vote ID ${vote.id}:`, {
+                    ...vote,
+                    startTime,
+                    duration,
+                    isOpen,
+                    options,
+                    timeLeft,
+                    endTime,
+                  });
+
+                  return {
+                    ...vote,
+                    startTime,
+                    duration,
+                    isOpen,
+                    options,
+                    timeLeft,
+                    endTime,
+                  };
+                })
+              );
+              console.log('Updated votes with details:', updatedVotes);
+              setVotes(updatedVotes);
+            } else {
+              throw new Error('No votes found for this user.');
+            }
           } else {
-            throw new Error('Ethereum object is not available.');
+            throw new Error("Contract details not found!");
           }
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            console.error('Failed to load contract or votes:', error.message);
+            setError(error.message);
+          } else {
+            console.error('An unexpected error occurred');
+            setError('An unexpected error occurred');
+          }
+        } finally {
+          setLoading(false);
         }
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error('Failed to load contract or votes:', error.message);
-          setError(error.message);
-        } else {
-          console.error('An unexpected error occurred');
-          setError('An unexpected error occurred');
-        }
-      } finally {
-        setLoading(false);
       }
+    };
+
+    if (!userLoading && !userDetailsLoading) {
+      fetchContractDetails();
     }
+  }, [status, account, isValidUser, userLoading, userDetails, userDetailsLoading]);
 
-    fetchData();
-  }, [status, account]);
-
-  if (loading) {
+  if (loading || userLoading || userDetailsLoading) {
     return (
       <Container>
         <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
@@ -211,10 +206,10 @@ const ResultsComponent: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error || userDetailsError) {
     return (
       <Container>
-        <Typography color="error">{error}</Typography>
+        <Typography color="error">{error || userDetailsError}</Typography>
       </Container>
     );
   }
