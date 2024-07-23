@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { createContract } from '../utils/createContract';
 import { db } from '../firebaseConfig';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore';
 import { useMetaMask } from "metamask-react";
 import VotingSystem from "../../hardhat-tutorial/artifacts/contracts/VotingSystem.sol/VotingSystem.json";
 import { getCurrentVoteId, fetchAndUpdateVoteId, getUsersByGroupId } from '../utils/fetchAndUpdateVoteId';
@@ -147,30 +147,39 @@ const CreateVote: React.FC = () => {
       alert(`Vote successfully created with ID: ${voteID}`);
       resetForm();
 
-      // now lets add all the users as voters 
-      try {
-        const usersInGroup = await getUsersByGroupId(account.toLowerCase(), groupId);
-        console.log(usersInGroup);
-        // Convert addresses to checksummed format
-        const checksummedAddresses = usersInGroup.map(addr => ethers.getAddress(addr));
-        console.log(checksummedAddresses);
-        const txx = await contract.addVoters(voteID, checksummedAddresses, groupID);
-        await txx.wait();
-        console.log(txx);
-      } catch (error) {
-        console.error('Failed to add voters:', error);
+    // Now let's add all the users as voters
+    try {
+      const usersInGroup = await getUsersByGroupId(account.toLowerCase(), groupId);
+      console.log(usersInGroup);
+      
+      // Filter and convert addresses to checksummed format
+      const checksummedAddresses = usersInGroup
+        .filter(addr => ethers.isAddress(addr)) // Validate addresses
+        .map(addr => ethers.getAddress(addr)); // Convert to checksummed format
+      
+      if (checksummedAddresses.length === 0) {
+        throw new Error('No valid addresses found in the group.');
       }
 
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('Failed to create vote:', error.message);
-        setError(error.message);
-      } else {
-        console.error('An unexpected error occurred');
-        setError('An unexpected error occurred');
-      }
+      console.log(checksummedAddresses);
+      const txx = await contract.addVoters(voteID, checksummedAddresses, groupID);
+      await txx.wait();
+      console.log(txx);
+    } catch (error) {
+      console.error('Failed to add voters:', error);
+      setError('Failed to add voters. Please check the addresses and try again.');
     }
-  };
+
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Failed to create vote:', error.message);
+      setError(error.message);
+    } else {
+      console.error('An unexpected error occurred');
+      setError('An unexpected error occurred');
+    }
+  }
+};
 
   const minStartDate = new Date().toISOString().slice(0, 16);
 
